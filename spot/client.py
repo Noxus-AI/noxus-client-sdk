@@ -32,7 +32,6 @@ class Requester:
         headers_ = {"X-API-Key": self.api_key}
         if headers:
             headers_.update(headers)
-        print(headers_)
         response = httpx.request(
             method,
             f"{self.base_url}/{url}",
