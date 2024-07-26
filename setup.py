@@ -4,7 +4,7 @@ setup(
     name="spot",
     version="0.1.0",
     packages=find_packages(),
-    install_requires=["anyio", "httpx"],
+    install_requires=["anyio", "httpx", "pydantic"],
     description="SDK for Spot",
     author="",
     author_email="",
