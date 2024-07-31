@@ -37,7 +37,7 @@ class Requester:
             headers_.update(headers)
         response = httpx.request(
             method,
-            f"{self.base_url}/{url}",
+            f"{self.base_url}{url}",
             headers=headers_,
             follow_redirects=True,
             json=json,
@@ -82,38 +82,65 @@ class Workflow(Requester):
         self.api_key = api_key
         self.data = data
 
+    @property
+    def inputs(self):
+        return [n for n in self.data.definition.nodes if n.type == "InputNode"]
+
+    @property
+    def outputs(self):
+        return [n for n in self.data.definition.nodes if n.type == "OutputNode"]
+
     def run(self, body) -> "Run":
         validate_body(self.data, body)
-        response = self.post(f"/v1/workflows/{self.data.id}/run", body)
-        response.raise_for_status()
-        return Run(self.api_key, response.json())
+        response = self.post(f"/v1/workflows/{self.data.id}/run", {"input": body})
+        return Run(self.api_key, self.data.id, response)
 
     async def async_run(self, body) -> "Run":
         validate_body(self.data, body)
-        response = await self.apost(f"/v1/workflows/{self.data.id}/run", body)
-        response.raise_for_status()
-        return Run(self.api_key, response.json())
+        response = await self.apost(
+            f"/v1/workflows/{self.data.id}/run", {"input": body}
+        )
+        return Run(self.api_key, self.data.id, response)
+
+
+class RunFailure(Exception):
+    pass
 
 
 class Run(Requester):
-    def __init__(self, api_key: str, data: Any):
+    def __init__(self, api_key: str, workflow_id: str, data: Any):
         self.api_key = api_key
+        self.workflow_id = workflow_id
         self.data = data
 
     def wait(self):
-        while self.get_progress() < 100:
-            time.sleep(1)
+        while self.get_status() not in ["failed", "completed"]:
+            time.sleep(5)
+        run_status = self.get_run()
+        if run_status["status"] == "failed":
+            raise RunFailure(run_status)
+        return run_status["output"]
 
-    def get_progress(self):
-        response = self.get(f"{self.data['url']}/progress")
-        response.raise_for_status()
-        return response.json()["progress"]
+    def get_run(self):
+        response = self.get(f"/v1/workflows/{self.workflow_id}/run/{self.data['id']}")
+        return response
+
+    def get_status(self):
+        return self.get_run()["status"]
 
     async def async_wait(self):
-        while await self.get_progress() < 100:
-            await anyio.sleep(1)
+        while await self.get_status() not in ["failed", "completed"]:
+            await anyio.sleep(5)
+        run_status = await self.async_get_run()
+        if run_status["status"] == "failed":
+            raise RunFailure(run_status)
+        return run_status["output"]
 
-    async def async_get_progress(self):
-        response = await self.aget(f"{self.data['url']}/progress")
-        response.raise_for_status()
-        return response.json()["progress"]
+    async def async_get_run(self):
+        response = await self.aget(
+            f"/v1/workflows/{self.workflow_id}/run/{self.data['id']}"
+        )
+        return response
+
+    async def async_get_status(self):
+        return await self.async_get_run()["status"]
