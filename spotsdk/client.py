@@ -6,7 +6,7 @@ from .models import validate_body, Workflow as WorkflowModel
 
 
 class Requester:
-    base_url = "https://app.getspot.io/api/backend"
+    base_url = "https://spotflow-backend-e1bcf65-k75qbcbz2q-ew.a.run.app"  # "https://app.getspot.io/api/backend"
 
     async def arequest(
         self, method: str, url: str, headers: dict = None, json: dict = None

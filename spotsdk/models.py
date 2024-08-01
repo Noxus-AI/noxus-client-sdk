@@ -35,7 +35,7 @@ class NodeConfig(BaseModel):
     model: Optional[str] = None
     prompt: Optional[str] = None
     remove_formatting: Optional[bool] = None
-    depth: Optional[str] = None
+    depth: Optional[str | int] = None
     to_scroll: Optional[bool] = None
     parse_html: Optional[bool] = None
     template: Optional[str] = None
