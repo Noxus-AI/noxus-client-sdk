@@ -1,0 +1,62 @@
+[project]
+name = "noxus-sdk"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "anyio",
+    "pydantic>=2.0",
+    "httpx",
+]
+
+[build-system]
+requires = ["setuptools>=64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+    "noxus_sdk"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3.3",
+    "pytest-subtests==0.13.1",
+    "pytest-asyncio==0.24.0",
+    "pytest-cov>=6.0.0",
+]
+dev = [
+    "hatch>=1.14.0",
+    "mypy==1.11.2",
+    "ruff==0.6.3",
+    "flake8==7.1.1",
+    "flake8-async==24.9.5",
+    "typer==0.12.3",
+    "textual>=2.1.0",
+    "psutil>=7.0.0"
+]
+
+
+[tool.ruff.lint]
+ignore = ["F401", "F541", "E722", "F841", "E402", "F811", "F403", "E741", "E401", "E731"]
+exclude = []
+
+[tool.hatch.envs.test]
+python = "3.10"
+skip-install = true   # Don't try to install dependencies
+
+[tool.hatch.envs.test.scripts]
+# Basic test commands
+test = "pytest {args}"
+test-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml {args}"
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "raise NotImplementedError", 
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "pass",
+    "raise ImportError"
+]

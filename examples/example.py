@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import os, sys, json
-from noxus_sdk import Client
+from spotsdk import Client
 
-c = Client(os.getenv("NOXUS_API_KEY"))
+c = Client(os.getenv("SPOT_API_KEY"))
 workflows = c.list_workflows()
 workflow = [w for w in workflows if w.data.name == "sanity test"][0]
 print(f"Workflow: {workflows[0].data.id} -> {workflows[0].inputs[0].node_config.label}")
