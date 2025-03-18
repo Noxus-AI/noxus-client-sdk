@@ -64,6 +64,9 @@ class Requester:
     def get(self, url: str, headers: dict | None = None):
         return self.request("GET", url, headers)
 
+    def patch(self, url: str, body: Any, headers: dict | None = None):
+        return self.request("PATCH", url, json=body, headers=headers)
+
     def post(self, url: str, body: Any, headers: dict | None = None):
         return self.request("POST", url, json=body, headers=headers)
 
@@ -78,6 +81,18 @@ class Client(Requester):
     def save_workflow(self, workflow: WorkflowClass):
         w = self.post(f"/v1/workflows", workflow.to_noxus())
         return Workflow(self.api_key, w, self.base_url)
+
+    def get_workflow(self, workflow_id: str) -> "Workflow":
+        w = self.get(f"/v1/workflows/{workflow_id}")
+        return Workflow(self.api_key, w, self.base_url)
+
+    def update_workflow(
+        self, workflow_id: str, workflow: WorkflowClass, force: bool = False
+    ) -> "Workflow":
+        w = self.patch(
+            f"/v1/workflows/{workflow_id}?force={force}", workflow.to_noxus()
+        )
+        return Workflow(self.api_key, WorkflowModel.model_validate(w), self.base_url)
 
     def list_workflows(self) -> List["Workflow"]:
         workflows_data = self.get(

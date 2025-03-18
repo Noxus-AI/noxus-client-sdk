@@ -247,6 +247,9 @@ class Workflow(BaseModel):
     edges: list["Edge"] = []
     x: int = 0
 
+    def update_workflow(self, workflow_id: str, client: "Client", force: bool = False):
+        return client.update_workflow(workflow_id, self, force)
+
     def save(self, client: "Client"):
         return client.save_workflow(self)
 
