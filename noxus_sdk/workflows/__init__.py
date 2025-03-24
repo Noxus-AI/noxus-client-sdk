@@ -240,7 +240,7 @@ class Node(BaseModel):
         return self
 
 
-class Workflow(BaseModel):
+class WorkflowDefinition(BaseModel):
     name: str = "Untitled Workflow"
     type: str = "flow"
     nodes: list["Node"] = []
@@ -248,10 +248,10 @@ class Workflow(BaseModel):
     x: int = 0
 
     def update_workflow(self, workflow_id: str, client: "Client", force: bool = False):
-        return client.update_workflow(workflow_id, self, force)
+        return client.workflows.update(workflow_id, self, force)
 
     def save(self, client: "Client"):
-        return client.save_workflow(self)
+        return client.workflows.save(self)
 
     def to_noxus(self) -> dict:
         return {
