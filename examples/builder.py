@@ -1,5 +1,5 @@
 import os
-from noxus_sdk.workflows import Workflow
+from noxus_sdk.workflows import WorkflowDefinition
 from noxus_sdk.client import Client
 
 api_key = os.getenv("NOXUS_API_KEY")
@@ -9,10 +9,10 @@ if api_key is None:
 # Initialize client with API key
 client = Client(api_key)
 
-existing_workflows = {w.data.name: w.data.id for w in client.list_workflows()}
+existing_workflows = {w.name: w.id for w in client.workflows.list()}
 
 # Create a new workflow for generating cheese poems
-workflow = Workflow(name="🧀 Poem")
+workflow = WorkflowDefinition(name="🧀 Poem")
 
 # Set up input node with a fixed value "cheese"
 input = workflow.node("InputNode").config(fixed_value=True, value="cheese")
@@ -31,7 +31,7 @@ workflow.link(ai.output(), output.input())
 
 # Save or update the workflow
 if "Noxus Poem" not in existing_workflows:
-    workflow_id = workflow.save(client).data.id
+    workflow_id = client.workflows.save(workflow).id
 else:
     workflow_id = existing_workflows["Noxus Poem"]
 
@@ -42,4 +42,4 @@ input = workflow.node("InputNode").config(fixed_value=True, value="Noxus AI")
 workflow.name = "Noxus Poem"
 
 # Update the existing workflow with the new configuration
-workflow.update_workflow(workflow_id, client)
+client.workflows.update(workflow_id, workflow)

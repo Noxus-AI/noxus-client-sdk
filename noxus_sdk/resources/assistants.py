@@ -29,33 +29,33 @@ class Agent(BaseResource):
 
     def update(self, name: str, settings: AgentSettings) -> "Agent":
         result = self.client.patch(
-            f"/agents/{self.id}",
+            f"/v1/agents/{self.id}",
             {"name": name, "settings": settings},
         )
         return Agent(client=self.client, **result)
 
     def delete(self) -> None:
-        self.client.delete(f"/agents/{self.id}")
+        self.client.delete(f"/v1/agents/{self.id}")
 
 
 class AgentService(BaseService[Agent]):
     def list(self) -> list[Agent]:
-        results = self.client.get("/agents")
+        results = self.client.get("/v1/agents")
         return [Agent(client=self.client, **result) for result in results]
 
     def create(self, name: str, settings: AgentSettings) -> Agent:
-        result = self.client.post("/agents", {"name": name, "settings": settings})
+        result = self.client.post("/v1/agents", {"name": name, "settings": settings})
         return Agent(client=self.client, **result)
 
     def get(self, agent_id: str) -> Agent:
-        result = self.client.get(f"/agents/{agent_id}")
+        result = self.client.get(f"/v1/agents/{agent_id}")
         return Agent(client=self.client, **result)
 
     def update(self, agent_id: str, name: str, settings: AgentSettings) -> Agent:
         result = self.client.patch(
-            f"/agents/{agent_id}", {"name": name, "settings": settings}
+            f"/v1/agents/{agent_id}", {"name": name, "settings": settings}
         )
         return Agent(client=self.client, **result)
 
     def delete(self, agent_id: str) -> None:
-        self.client.delete(f"/agents/{agent_id}")
+        self.client.delete(f"/v1/agents/{agent_id}")

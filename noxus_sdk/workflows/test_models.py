@@ -1,12 +1,12 @@
 import pytest
-from noxus_sdk.workflows import Workflow, ConfigError
+from noxus_sdk.workflows import WorkflowDefinition, ConfigError
 from noxus_sdk.client import Client
 
 
 @pytest.mark.test
 def test_generate_text():
     client = Client("")
-    workflow = Workflow()
+    workflow = WorkflowDefinition()
     n = workflow.node("TextGenerationNode")
     with pytest.raises(ConfigError) as exc:
         n.config(foo="bar")
@@ -22,7 +22,7 @@ def test_generate_text():
 
 def test_full_workflow():
     client = Client("")
-    workflow = Workflow()
+    workflow = WorkflowDefinition()
     input = workflow.node("InputNode")
     ai = workflow.node("TextGenerationNode").config(
         template="Write a poem about ((Input 1))"
@@ -45,7 +45,7 @@ def test_full_workflow():
 
 def test_full_workflow_link_many():
     client = Client("")
-    workflow = Workflow()
+    workflow = WorkflowDefinition()
     input = workflow.node("InputNode")
     ai = workflow.node("TextGenerationNode").config(
         template="Write a poem about ((Input 1))"

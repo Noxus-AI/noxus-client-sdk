@@ -9,7 +9,7 @@ if api_key is None:
 c = Client(api_key)
 
 # Get all available workflows
-workflows = c.list_workflows()
+workflows = c.workflows.list()
 
 # Find a specific workflow by name
 workflow = [w for w in workflows if w.data.name == "sanity test"][0]

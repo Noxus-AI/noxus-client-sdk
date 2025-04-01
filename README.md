@@ -241,14 +241,23 @@ The `link_many()` method is a convenience function for creating a linear chain o
 Conversations represent chat interactions with AI models. They provide a way to configure and manage chat sessions:
 
 ```python
-from noxus_sdk.resources.conversations import ConversationSettings, ConversationTool
+from noxus_sdk.resources.conversations import (
+    ConversationSettings, 
+    MessageRequest,
+    WebResearchSettings,
+    KnowledgeBaseQaSettings
+)
 
-# Define a conversation tool (optional)
-tool = ConversationTool(
-    name="example_tool",
-    description="An example tool",
+# Create conversation tools
+web_research_tool = WebResearchSettings(
     enabled=True,
-    type="function"
+    extra_instructions="Focus on recent and reliable sources."
+)
+
+kb_qa_tool = KnowledgeBaseQaSettings(
+    enabled=True,
+    kb_id="knowledge_base_uuid_here",
+    extra_instructions="Reference specific sections when possible."
 )
 
 # Define conversation settings
@@ -256,7 +265,7 @@ settings = ConversationSettings(
     model_selection=["gpt-4o-mini"],
     temperature=0.7,
     max_tokens=150,
-    tools=[tool],
+    tools=[web_research_tool, kb_qa_tool],
     extra_instructions="Please be concise."
 )
 
@@ -283,7 +292,132 @@ updated_conversation = client.conversations.update(
 client.conversations.delete(conversation_id="conversation_id_here")
 ```
 
-The `ConversationSettings` class allows you to configure model parameters like temperature and token limits, as well as specify tools the conversation can use.
+#### Sending Messages in a Conversation
+
+Once you have a conversation, you can add messages to it and get the AI's response:
+
+```python
+from noxus_sdk.resources.conversations import MessageRequest, ConversationFile
+
+# Simple message without using any tools
+message = MessageRequest(content="Tell me about machine learning")
+response_message = conversation.add_message(message)
+print(f"AI Response: {response_message.message_parts}")
+
+# Message using web research tool
+web_research_message = MessageRequest(
+    content="What are the latest advancements in quantum computing?",
+    tool="web_research"
+)
+response = conversation.add_message(web_research_message)
+
+# Message with knowledge base query
+kb_message = MessageRequest(
+    content="What does our documentation say about API keys?",
+    tool="kb_qa",
+    kb_id="knowledge_base_uuid_here"
+)
+response = conversation.add_message(kb_message)
+
+# Message with attached files
+file = ConversationFile(
+    status="sucess",  # Note the spelling in the API
+    name="report.pdf",
+    url="https://example.com/files/report.pdf"
+)
+file_message = MessageRequest(
+    content="Analyze this report",
+    files=[file]
+)
+response = conversation.add_message(file_message)
+
+# Get all messages in a conversation
+all_messages = conversation.get_messages()
+for msg in all_messages:
+    print(f"Message ID: {msg.id}, Created: {msg.created_at}")
+```
+
+#### Asynchronous Conversation Operations
+
+For applications that need non-blocking operations:
+
+```python
+import asyncio
+
+async def conversation_example():
+    # Create a conversation asynchronously
+    conversation = await client.conversations.acreate(name="Async Example", settings=settings)
+    
+    # Send a message and get response asynchronously
+    message = MessageRequest(content="How does quantum computing work?")
+    response = await conversation.aadd_message(message)
+    
+    # Refresh the conversation to get latest state
+    updated_conversation = await conversation.arefresh()
+    
+    # Get all messages
+    messages = await updated_conversation.aget_messages()
+    return messages
+
+# Run the async function
+messages = asyncio.run(conversation_example())
+```
+
+#### Available Conversation Tools
+
+The SDK supports various specialized tools that can be enabled in conversations:
+
+```python
+from noxus_sdk.resources.conversations import (
+    WebResearchSettings,
+    NoxusQaSettings,
+    KnowledgeBaseSelectorSettings,
+    KnowledgeBaseQaSettings,
+    WorkflowSettings
+)
+
+# Web research tool
+web_tool = WebResearchSettings(
+    enabled=True,
+    extra_instructions="Focus on academic sources"
+)
+
+# Noxus Q&A tool
+noxus_qa_tool = NoxusQaSettings(
+    enabled=True,
+    extra_instructions="Explain Noxus features in simple terms"
+)
+
+# Knowledge base selector tool
+kb_selector_tool = KnowledgeBaseSelectorSettings(
+    enabled=True,
+    extra_instructions="Choose the most relevant knowledge base"
+)
+
+# Knowledge base Q&A tool with specific KB
+kb_qa_tool = KnowledgeBaseQaSettings(
+    enabled=True,
+    kb_id="knowledge_base_uuid_here",
+    extra_instructions="Provide detailed answers from the knowledge base"
+)
+
+# Workflow execution tool
+workflow_tool = WorkflowSettings(
+    enabled=True,
+    workflow_id="workflow_uuid_here",
+    name="Data Analysis Workflow",
+    description="Run the data analysis workflow on provided input"
+)
+
+# Create settings with all tools
+settings = ConversationSettings(
+    model_selection=["gpt-4o-mini"],
+    temperature=0.7,
+    max_tokens=150,
+    tools=[web_tool, noxus_qa_tool, kb_selector_tool, kb_qa_tool, workflow_tool],
+    extra_instructions="Use the most appropriate tool for each query."
+)
+```
 
 ### Agents
 
