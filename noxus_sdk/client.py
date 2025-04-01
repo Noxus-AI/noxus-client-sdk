@@ -4,12 +4,15 @@ import httpx
 import time
 from typing import List, Any
 
+from regex import W
+
 
 class Requester:
     base_url = os.environ.get("NOXUS_BACKEND_URL", "https://backend.noxus.ai")
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, extra_headers: dict | None = None):
         self.api_key = api_key
+        self.extra_headers = extra_headers
 
     async def arequest(
         self,
@@ -22,6 +25,8 @@ class Requester:
         headers_ = {"X-API-Key": self.api_key}
         if headers:
             headers_.update(headers)
+        if self.extra_headers:
+            headers_.update(self.extra_headers)
         async with httpx.AsyncClient() as client:
             response = await client.request(
                 method,
@@ -50,7 +55,13 @@ class Requester:
         params_ = params or {}
         params_["page"] = page
         params_["page_size"] = page_size
-        result = await self.arequest("GET", url, headers=headers, params=params_)
+
+        headers_ = {"X-API-Key": self.api_key}
+        if headers:
+            headers_.update(headers)
+        if self.extra_headers:
+            headers_.update(self.extra_headers)
+        result = await self.arequest("GET", url, headers=headers_, params=params_)
         if "items" not in result:
             return []
         return result["items"]
@@ -75,6 +86,8 @@ class Requester:
         headers_ = {"X-API-Key": self.api_key}
         if headers:
             headers_.update(headers)
+        if self.extra_headers:
+            headers_.update(self.extra_headers)
         response = httpx.request(
             method,
             f"{self.base_url}{url}",
@@ -100,7 +113,12 @@ class Requester:
         params_ = params or {}
         params_["page"] = page
         params_["page_size"] = page_size
-        result = self.request("GET", url, headers=headers, params=params_)
+        headers_ = {"X-API-Key": self.api_key}
+        if headers:
+            headers_.update(headers)
+        if self.extra_headers:
+            headers_.update(self.extra_headers)
+        result = self.request("GET", url, headers=headers_, params=params_)
         if "items" not in result:
             return []
         return result["items"]
@@ -116,7 +134,13 @@ class Requester:
 
 
 class Client(Requester):
-    def __init__(self, api_key: str, base_url: str = "https://backend.noxus.ai"):
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str = "https://backend.noxus.ai",
+        load_nodes: bool = True,
+        extra_headers: dict | None = None,
+    ):
         from noxus_sdk.workflows import load_node_types
         from noxus_sdk.resources.workflows import WorkflowService
         from noxus_sdk.resources.assistants import AgentService
@@ -125,9 +149,13 @@ class Client(Requester):
 
         self.api_key = api_key
         self.base_url = os.environ.get("NOXUS_BACKEND_URL", base_url)
-        self.nodes = self.get_nodes()
+        self.extra_headers = extra_headers
 
-        load_node_types(self.nodes)
+        if load_nodes:
+            self.nodes = self.get_nodes()
+            load_node_types(self.nodes)
+        else:
+            self.nodes = []
 
         self.workflows = WorkflowService(self)
         self.agents = AgentService(self)

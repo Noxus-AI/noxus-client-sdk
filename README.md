@@ -6,10 +6,10 @@ The `noxus-client-sdk` is a Python library designed to interact with the Noxus A
 
 ## Installation
 
-To install the SDK, use pip:
+To install the SDK, run the following command in the root directory of the project:
 
 ```bash
-pip install noxus-client-sdk
+pip install .
 ```
 
 The SDK requires Python 3.8 or later and automatically installs all necessary dependencies.
