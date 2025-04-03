@@ -206,6 +206,7 @@ class Client(Requester):
         from noxus_sdk.resources.assistants import AgentService
         from noxus_sdk.resources.conversations import ConversationService
         from noxus_sdk.resources.knowledge_bases import KnowledgeBaseService
+        from noxus_sdk.resources.runs import RunService
 
         self.api_key = api_key
         self.base_url = os.environ.get("NOXUS_BACKEND_URL", base_url)
@@ -221,6 +222,7 @@ class Client(Requester):
         self.agents = AgentService(self)
         self.conversations = ConversationService(self)
         self.knowledge_bases = KnowledgeBaseService(self)
+        self.runs = RunService(self)
 
     def get_nodes(self) -> List[dict]:
         return self.get("/nodes")

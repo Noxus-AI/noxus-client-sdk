@@ -15,13 +15,13 @@ class Run(BaseResource):
     group_id: str
     workflow_id: str
     input: dict
-    node_ids: list[str]
+    node_ids: list[str] | None = None
     status: str
     progress: int
     created_at: str
-    finished_at: str
-    source: str
+    finished_at: str | None = None
     output: dict | None = None
+    workflow_definition: dict | None = None
 
     def refresh(self) -> "Run":
         response = self.client.get(f"/v1/workflows/{self.workflow_id}/runs/{self.id}")

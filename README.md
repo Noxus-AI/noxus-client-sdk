@@ -109,7 +109,7 @@ print(f"Run status: {result.status}")
 print(f"Output: {result.output}")
 
 # Get a list of workflow runs
-runs = client.run.list(workflow_id="workflow_id_here", page=1, page_size=10)
+runs = client.runs.list(workflow_id="workflow_id_here", page=1, page_size=10)
 ```
 
 The `wait()` method allows you to block until the workflow completes, making it easy to handle workflow execution in a synchronous manner. You can adjust the polling interval as needed.
@@ -128,8 +128,7 @@ workflow = WorkflowDefinition(name="Example Workflow")
 input_node = workflow.node("InputNode").config(fixed_value=True, value="Hello, World!")
 ai_node = workflow.node("TextGenerationNode").config(
     template="Generate a creative response to: ((Input 1))",
-    model_selection=["gpt-4o-mini"],
-    temperature=0.7
+    model=["gpt-4o-mini"],
 )
 output_node = workflow.node("OutputNode")
 
@@ -140,28 +139,29 @@ workflow.link(ai_node.output(), output_node.input())
 # Save the workflow to Noxus
 client = Client(api_key="your_api_key_here")
 created_workflow = workflow.save(client)
-print(f"Created workflow with ID: {created_workflow.data.id}")
+print(f"Created workflow with ID: {created_workflow.id}")
 ```
 
 For more complex workflows, you can also chain multiple nodes more easily:
 
 ```python
-# Create a workflow for processing and analyzing text
+# Create a workflow for summarizing and analyzing text
 workflow = WorkflowDefinition(name="Text Processing Pipeline")
 
 # Add nodes in sequence
-input_node = workflow.node("InputNode")
-text_splitter = workflow.node("TextSplitterNode").config(chunk_size=1000, overlap=100)
-sentiment_analyzer = workflow.node("SentimentAnalysisNode")
-summarizer = workflow.node("TextSummarizationNode").config(max_length=150)
-output_node = workflow.node("OutputNode")
+input_node = workflow.node("InputNode").config(label="b", fixed_value=True, value="Hello, World!", type="str")
+text_analysis = workflow.node("TextGenerationNode").config(template="Analyze ((Input 1))")
+summarizer = workflow.node("SummaryNode").config(summary_format="Concise")
+combiner = workflow.node("ComposeTextNode").config(template="((Input 1)) ((Input 2))")
+
+output = workflow.node("OutputNode")
 
 # Create a branched workflow with multiple paths
-workflow.link(input_node.output(), text_splitter.input())
-workflow.link(text_splitter.output(), sentiment_analyzer.input())
-workflow.link(text_splitter.output(), summarizer.input())
-workflow.link(sentiment_analyzer.output(), output_node.input("sentiment"))
-workflow.link(summarizer.output(), output_node.input("summary"))
+workflow.link(input_node.output(), text_analysis.input(key="Input 1"))
+workflow.link(input_node.output(), summarizer.input())
+workflow.link(text_analysis.output(), combiner.input(key="Input 1"))
+workflow.link(text_analysis.output(), combiner.input(key="Input 2"))
+workflow.link(combiner.output(), output.input())
 
 # Save the workflow
 workflow.save(client)
@@ -171,7 +171,7 @@ You can also check for existing workflows and update them if needed:
 
 ```python
 # Get a list of existing workflows
-existing_workflows = {w.data.name: w.data.id for w in client.workflows.list()}
+existing_workflows = {w.name: w.id for w in client.workflows.list()}
 
 # Create or update a workflow
 workflow = WorkflowDefinition(name="My Workflow")
@@ -185,7 +185,7 @@ if workflow.name in existing_workflows:
 else:
     # Create new workflow
     result = workflow.save(client)
-    print(f"Created new workflow with ID: {result.data.id}")
+    print(f"Created new workflow with ID: {result.id}")
 ```
 
 #### Node Configuration
@@ -202,17 +202,7 @@ input_node = workflow.node("InputNode").config(
 # Configure a text generation node with specific parameters
 generation_node = workflow.node("TextGenerationNode").config(
     template="Write a summary about ((Input 1))",
-    model_selection=["gpt-4o-mini"],
-    temperature=0.7,
-    max_tokens=250,
-    extra_instructions="Keep the summary concise and informative."
-)
-
-# Configure a code execution node
-code_node = workflow.node("CodeExecutionNode").config(
-    language="python",
-    code="def process(input_text):\n    return input_text.upper()",
-    timeout=30
+    model=["gpt-4o-mini"],
 )
 ```
 
@@ -244,17 +234,17 @@ Conversations represent chat interactions with AI models. They provide a way to 
 from noxus_sdk.resources.conversations import (
     ConversationSettings, 
     MessageRequest,
-    WebResearchSettings,
-    KnowledgeBaseQaSettings
+    WebResearchTool,
+    KnowledgeBaseQaTool
 )
 
 # Create conversation tools
-web_research_tool = WebResearchSettings(
+web_research_tool = WebResearchTool(
     enabled=True,
     extra_instructions="Focus on recent and reliable sources."
 )
 
-kb_qa_tool = KnowledgeBaseQaSettings(
+kb_qa_tool = KnowledgeBaseQaTool(
     enabled=True,
     kb_id="knowledge_base_uuid_here",
     extra_instructions="Reference specific sections when possible."
@@ -280,13 +270,6 @@ for conv in conversations:
 
 # Get a specific conversation
 conversation = client.conversations.get(conversation_id="conversation_id_here")
-
-# Update a conversation
-updated_conversation = client.conversations.update(
-    conversation_id="conversation_id_here",
-    name="Updated Conversation",
-    settings=settings
-)
 
 # Delete a conversation
 client.conversations.delete(conversation_id="conversation_id_here")
@@ -369,40 +352,40 @@ The SDK supports various specialized tools that can be enabled in conversations:
 
 ```python
 from noxus_sdk.resources.conversations import (
-    WebResearchSettings,
-    NoxusQaSettings,
-    KnowledgeBaseSelectorSettings,
-    KnowledgeBaseQaSettings,
-    WorkflowSettings
+    WebResearchTool,
+    NoxusQaTool,
+    KnowledgeBaseSelectorTool,
+    KnowledgeBaseQaTool,
+    WorkflowTool
 )
 
 # Web research tool
-web_tool = WebResearchSettings(
+web_tool = WebResearchTool(
     enabled=True,
     extra_instructions="Focus on academic sources"
 )
 
 # Noxus Q&A tool
-noxus_qa_tool = NoxusQaSettings(
+noxus_qa_tool = NoxusQaTool(
     enabled=True,
     extra_instructions="Explain Noxus features in simple terms"
 )
 
 # Knowledge base selector tool
-kb_selector_tool = KnowledgeBaseSelectorSettings(
+kb_selector_tool = KnowledgeBaseSelectorTool(
     enabled=True,
     extra_instructions="Choose the most relevant knowledge base"
 )
 
 # Knowledge base Q&A tool with specific KB
-kb_qa_tool = KnowledgeBaseQaSettings(
+kb_qa_tool = KnowledgeBaseQaTool(
     enabled=True,
     kb_id="knowledge_base_uuid_here",
     extra_instructions="Provide detailed answers from the knowledge base"
 )
 
 # Workflow execution tool
-workflow_tool = WorkflowSettings(
+workflow_tool = WorkflowTool(
     enabled=True,
     workflow_id="workflow_uuid_here",
     name="Data Analysis Workflow",
@@ -421,18 +404,17 @@ settings = ConversationSettings(
 
 ### Agents
 
-Agents are autonomous AI assistants that can perform tasks with specific configurations:
+Agents are autonomous AI assistants that can perform tasks with specific configurations.
+Agents use the same tools as conversations:
 
 ```python
-from noxus_sdk.resources.assistants import AgentSettings, AgentTool
+from noxus_sdk.resources.assistants import AgentSettings
+from noxus_sdk.resources.conversations import WebResearchTool
 
 # Define agent tool
-tool = AgentTool(
-    name="example_tool",
-    description="An example tool",
-    definition={},
+tool = WebResearchTool(
     enabled=True,
-    type="function"
+    extra_instructions="Focus on academic sources"
 )
 
 # Define agent settings

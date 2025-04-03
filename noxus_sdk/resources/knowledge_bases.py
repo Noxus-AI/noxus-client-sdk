@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Literal
 from noxus_sdk.resources.base import BaseResource, BaseService
 
 
@@ -7,13 +7,15 @@ class KnowledgeBaseIngestion(BaseModel):
     batch_size: int
     default_chunk_size: int
     default_chunk_overlap: int
-    enrich_chunks_mode: str
+    enrich_chunks_mode: Literal["inject_summary", "contextual"] = "contextual"
     enrich_pre_made_qa: bool
     methods: dict
 
 
 class KnowledgeBaseRetrieval(BaseModel):
-    type: str
+    type: Literal[
+        "full_text_search", "semantic_search", "hybrid_search", "hybrid_reranking"
+    ] = "hybrid_reranking"
     hybrid_settings: dict
     reranker_settings: dict
 
@@ -23,7 +25,6 @@ class KnowledgeBaseHybridSettings(BaseModel):
 
 
 class KnowledgeBaseSettings(BaseModel):
-    allowed_sources: list[str]
     ingestion: KnowledgeBaseIngestion
     retrieval: KnowledgeBaseRetrieval
     embeddings: dict
@@ -54,13 +55,13 @@ class KnowledgeBase(BaseResource):
     embeddings: dict
 
     def refresh(self) -> "KnowledgeBase":
-        response = self.client.get(f"/v1/knowledge_bases/{self.id}")
+        response = self.client.get(f"/v1/knowledge-bases/{self.id}")
         for key, value in response.items():
             setattr(self, key, value)
         return self
 
     async def arefresh(self) -> "KnowledgeBase":
-        response = await self.client.aget(f"/v1/knowledge_bases/{self.id}")
+        response = await self.client.aget(f"/v1/knowledge-bases/{self.id}")
         for key, value in response.items():
             setattr(self, key, value)
         return self
@@ -69,7 +70,7 @@ class KnowledgeBase(BaseResource):
 class KnowledgeBaseService(BaseService[KnowledgeBase]):
     def list(self, page: int = 1, page_size: int = 10) -> list[KnowledgeBase]:
         knowledge_bases = self.client.pget(
-            "/v1/knowledge_bases", params={"page": page, "page_size": page_size}
+            "/v1/knowledge-bases", params={"page": page, "page_size": page_size}
         )
         return [
             KnowledgeBase(client=self.client, **knowledge_base)
@@ -78,7 +79,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
 
     async def alist(self, page: int = 1, page_size: int = 10) -> List[KnowledgeBase]:
         knowledge_bases = await self.client.apget(
-            "/v1/knowledge_bases", params={"page": page, "page_size": page_size}
+            "/v1/knowledge-bases", params={"page": page, "page_size": page_size}
         )
         return [
             KnowledgeBase(client=self.client, **knowledge_base)
@@ -86,10 +87,10 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         ]
 
     def get(self, knowledge_base_id: str) -> KnowledgeBase:
-        return self.client.get(f"/v1/knowledge_bases/{knowledge_base_id}")
+        return self.client.get(f"/v1/knowledge-bases/{knowledge_base_id}")
 
     async def aget(self, knowledge_base_id: str) -> KnowledgeBase:
-        return await self.client.aget(f"/v1/knowledge_bases/{knowledge_base_id}")
+        return await self.client.aget(f"/v1/knowledge-bases/{knowledge_base_id}")
 
     def create(
         self,
@@ -99,7 +100,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         settings_: KnowledgeBaseSettings,
     ) -> KnowledgeBase:
         return self.client.post(
-            "/v1/knowledge_bases",
+            "/v1/knowledge-bases",
             {
                 "name": name,
                 "description": description,
@@ -116,7 +117,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         settings_: KnowledgeBaseSettings,
     ) -> KnowledgeBase:
         return await self.client.apost(
-            "/v1/knowledge_bases",
+            "/v1/knowledge-bases",
             {
                 "name": name,
                 "description": description,

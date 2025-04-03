@@ -14,7 +14,7 @@ class ConversationTool(BaseModel):
     extra_instructions: str | None = None
 
 
-class WebResearchSettings(ConversationTool):
+class WebResearchTool(ConversationTool):
     """Tool that allows the user to search the web for information"""
 
     type: Literal["web_research"] = "web_research"
@@ -22,7 +22,7 @@ class WebResearchSettings(ConversationTool):
     description: str = "Search the web for information"
 
 
-class NoxusQaSettings(ConversationTool):
+class NoxusQaTool(ConversationTool):
     """Tool that allows the user to answer questions about the Noxus platform"""
 
     type: Literal["noxus_qa"] = "noxus_qa"
@@ -30,7 +30,7 @@ class NoxusQaSettings(ConversationTool):
     description: str = "Answer questions about the Noxus platform"
 
 
-class KnowledgeBaseSelectorSettings(ConversationTool):
+class KnowledgeBaseSelectorTool(ConversationTool):
     """Tool that allows the user to select a knowledge base to answer questions about"""
 
     type: Literal["kb_selector"] = "kb_selector"
@@ -39,7 +39,7 @@ class KnowledgeBaseSelectorSettings(ConversationTool):
     kb_id: UUID | None = None
 
 
-class KnowledgeBaseQaSettings(ConversationTool):
+class KnowledgeBaseQaTool(ConversationTool):
     """Tool that allows the user to answer questions about a specific pre-selected knowledge base"""
 
     type: Literal["kb_qa"] = "kb_qa"
@@ -48,21 +48,21 @@ class KnowledgeBaseQaSettings(ConversationTool):
     kb_id: UUID | None = None
 
 
-class WorkflowSettings(ConversationTool):
+class WorkflowTool(ConversationTool):
     """Tool that allows the user to run a workflow"""
 
     type: Literal["workflow"] = "workflow"
     name: str = "Workflow Runner"
     description: str = "Run a workflow"
-    workflow_id: UUID
+    workflow_id: UUID | dict | None = None
 
 
 AnyToolSettings = Annotated[
-    WebResearchSettings
-    | NoxusQaSettings
-    | KnowledgeBaseSelectorSettings
-    | KnowledgeBaseQaSettings
-    | WorkflowSettings,
+    WebResearchTool
+    | NoxusQaTool
+    | KnowledgeBaseSelectorTool
+    | KnowledgeBaseQaTool
+    | WorkflowTool,
     Discriminator("type"),
 ]
 
@@ -102,7 +102,7 @@ class Conversation(BaseResource):
     last_updated_at: str
     settings: ConversationSettings
     etag: str | None = None
-    messages: list[Message]
+    messages: list[Message] = []
 
     def refresh(self) -> "Conversation":
         response = self.client.get(f"/v1/conversations/{self.id}")
@@ -192,7 +192,8 @@ class ConversationService(BaseService[Conversation]):
         self, conversation_id: str, name: str, settings: ConversationSettings
     ) -> Conversation:
         result = self.client.patch(
-            f"/conversations/{conversation_id}", {"name": name, "settings": settings}
+            f"/v1/conversations/{conversation_id}",
+            {"name": name, "settings": settings.model_dump()},
         )
         return Conversation(client=self.client, **result)
 
@@ -206,7 +207,7 @@ class ConversationService(BaseService[Conversation]):
         return Conversation(client=self.client, **result)
 
     def delete(self, conversation_id: str) -> None:
-        self.client.delete(f"/conversations/{conversation_id}")
+        self.client.delete(f"/v1/conversations/{conversation_id}")
 
     async def adelete(self, conversation_id: str) -> None:
         await self.client.adelete(f"/v1/conversations/{conversation_id}")
