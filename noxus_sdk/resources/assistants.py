@@ -1,4 +1,3 @@
-from mistralai import Agents
 from pydantic import BaseModel
 from typing import List
 from noxus_sdk.resources.base import BaseResource, BaseService
