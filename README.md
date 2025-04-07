@@ -402,7 +402,7 @@ settings = ConversationSettings(
 )
 ```
 
-### Agents
+### Agents (also known as Co-workers)
 
 Agents are autonomous AI assistants that can perform tasks with specific configurations.
 Agents use the same tools as conversations:
