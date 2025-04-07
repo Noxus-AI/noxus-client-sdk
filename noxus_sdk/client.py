@@ -225,7 +225,19 @@ class Client(Requester):
         self.runs = RunService(self)
 
     def get_nodes(self) -> List[dict]:
-        return self.get("/nodes")
+        return self.get("/v1/nodes")
 
-    async def async_get_nodes(self) -> List[dict]:
-        return await self.aget("/nodes")
+    async def aget_nodes(self) -> List[dict]:
+        return await self.aget("/v1/nodes")
+
+    def get_models(self) -> List[dict]:
+        return self.get("/v1/models/llms")
+
+    async def aget_models(self) -> List[dict]:
+        return await self.aget("/v1/models/llms")
+
+    def get_chat_presets(self) -> List[dict]:
+        return self.get("/v1/models/llms/presets")
+
+    async def aget_chat_presets(self) -> List[dict]:
+        return await self.aget("/v1/models/llms/presets")

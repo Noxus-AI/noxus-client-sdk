@@ -557,6 +557,55 @@ asyncio.run(main())
 
 Asynchronous methods are prefixed with `a` (like `alist`, `arefresh`, `arun`), making it easy to identify them.
 
+### Platform Information Methods
+
+The SDK provides methods to retrieve information about the Noxus platform, including available nodes, models, and chat presets. These methods are available in both synchronous and asynchronous versions:
+
+```python
+from noxus_sdk.client import Client
+
+client = Client(api_key="your_api_key_here")
+
+# Get available workflow nodes
+nodes = client.get_nodes()  # Synchronous
+nodes = await client.aget_nodes()  # Asynchronous
+
+# Get available language models
+models = client.get_models()  # Synchronous
+models = await client.aget_models()  # Asynchronous
+
+# Get chat model presets
+presets = client.get_chat_presets()  # Synchronous
+presets = await client.aget_chat_presets()  # Asynchronous
+```
+
+These methods are particularly useful when you need to:
+- List available node types for workflow construction
+- Check which language models are available for your tasks
+- Access predefined chat configuration presets
+
+For example, you might use these methods when setting up a new workflow or configuring a conversation:
+
+```python
+# Get available models and use them in conversation settings
+models = client.get_models()
+model_names = [model["name"] for model in models]
+
+settings = ConversationSettings(
+    model_selection=[model_names[0]],  # Use the first available model
+    temperature=0.7,
+    max_tokens=150,
+    tools=[],
+    extra_instructions="Please be concise."
+)
+
+# Create a conversation with the retrieved model
+conversation = client.conversations.create(
+    name="Model-specific Conversation", 
+    settings=settings
+)
+```
+
 ### Pagination
 
 Most list operations support pagination. You can specify the `page` and `page_size` parameters to control the number of items returned:
