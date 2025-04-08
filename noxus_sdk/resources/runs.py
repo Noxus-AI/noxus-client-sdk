@@ -1,8 +1,7 @@
 import time
 import asyncio
 
-from typing import List, TYPE_CHECKING
-
+from typing import List
 from noxus_sdk.resources.base import BaseResource, BaseService
 
 

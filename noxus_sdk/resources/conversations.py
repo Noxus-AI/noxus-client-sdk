@@ -36,7 +36,7 @@ class KnowledgeBaseSelectorTool(ConversationTool):
     type: Literal["kb_selector"] = "kb_selector"
     name: str = "Select Knowledge Base Q&A"
     description: str = "Select a knowledge base to answer questions about"
-    kb_id: UUID | None = None
+    kb_id: str | None = None
 
 
 class KnowledgeBaseQaTool(ConversationTool):
@@ -45,7 +45,7 @@ class KnowledgeBaseQaTool(ConversationTool):
     type: Literal["kb_qa"] = "kb_qa"
     name: str = "Knowledge Base Q&A"
     description: str = "Answer questions about the knowledge base"
-    kb_id: UUID | None = None
+    kb_id: str | None = None
 
 
 class WorkflowTool(ConversationTool):
@@ -54,7 +54,7 @@ class WorkflowTool(ConversationTool):
     type: Literal["workflow"] = "workflow"
     name: str = "Workflow Runner"
     description: str = "Run a workflow"
-    workflow_id: UUID | dict | None = None
+    workflow_id: str | dict | None = None
 
 
 AnyToolSettings = Annotated[
