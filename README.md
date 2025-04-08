@@ -125,7 +125,7 @@ from noxus_sdk.workflows import WorkflowDefinition
 workflow = WorkflowDefinition(name="Example Workflow")
 
 # Add nodes to the workflow
-input_node = workflow.node("InputNode").config(fixed_value=True, value="Hello, World!")
+input_node = workflow.node("InputNode").config(label="Input 1", fixed_value=True, value="Hello, World!")
 ai_node = workflow.node("TextGenerationNode").config(
     template="Generate a creative response to: ((Input 1))",
     model=["gpt-4o-mini"],
@@ -195,6 +195,7 @@ Each node type has specific configuration options that can be set using the `con
 ```python
 # Configure an input node with a fixed value
 input_node = workflow.node("InputNode").config(
+    label="Input 1",
     fixed_value=True, 
     value="This is a fixed input"
 )
