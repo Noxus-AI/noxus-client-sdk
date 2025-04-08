@@ -82,10 +82,11 @@ class Requester:
         url: str,
         body: Any,
         headers: dict | None = None,
+        params: dict | None = None,
         timeout: int | None = None,
     ):
         return await self.arequest(
-            "POST", url, json=body, headers=headers, timeout=timeout
+            "POST", url, json=body, headers=headers, timeout=timeout, params=params
         )
 
     async def apatch(
@@ -180,9 +181,12 @@ class Requester:
         url: str,
         body: Any,
         headers: dict | None = None,
+        params: dict | None = None,
         timeout: int | None = None,
     ):
-        return self.request("POST", url, json=body, headers=headers, timeout=timeout)
+        return self.request(
+            "POST", url, json=body, headers=headers, timeout=timeout, params=params
+        )
 
     def delete(
         self,

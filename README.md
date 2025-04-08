@@ -452,9 +452,39 @@ client.agents.delete(agent_id="agent_id_here")
 agent = client.agents.get(agent_id="agent_id_here")
 agent.update(name="New Name", settings=agent_settings)
 agent.delete()
-```
 
-Agents can be configured with specific tools and parameters to customize their behavior for different use cases.
+#### Starting Conversations with Agents
+
+You can start a conversation with an agent using the `agent_id` parameter in the conversation creation process:
+
+```python
+# First, get the agent you want to chat with
+agent = client.agents.get(agent_id="agent_id_here")
+
+# Create a conversation with this agent
+# Note: When using agent_id, you don't need to provide settings
+conversation = client.conversations.create(
+    name="Chat with Agent",
+    agent_id=agent.id
+)
+
+# Now you can send messages to the conversation
+message = MessageRequest(content="Hello, can you help me with something?")
+response = conversation.add_message(message)
+print(f"Agent Response: {response.message_parts}")
+
+# You can also create a conversation with the agent asynchronously
+async def create_agent_conversation():
+    agent = await client.agents.aget(agent_id="agent_id_here")
+    conversation = await client.conversations.acreate(
+        name="Async Agent Chat",
+        agent_id=agent.id
+    )
+    return conversation
+
+# Using this approach, the agent's settings, tools, and capabilities are 
+# automatically applied to the conversation without needing to specify them manually
+```
 
 ### Knowledge Bases
 

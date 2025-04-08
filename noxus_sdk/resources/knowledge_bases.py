@@ -42,7 +42,6 @@ class KnowledgeBase(BaseResource):
     num_docs: int
     created_at: str
     updated_at: str
-    error: dict
     total_documents: int
     training_documents: int
     trained_documents: int
@@ -51,8 +50,9 @@ class KnowledgeBase(BaseResource):
     source_types: dict
     training_source_types: list[str]
     settings_: KnowledgeBaseSettings
-    retrieval: dict
-    embeddings: dict
+    retrieval: dict | None = None
+    error: dict | None = None
+    embeddings: dict | None = None
 
     def refresh(self) -> "KnowledgeBase":
         response = self.client.get(f"/v1/knowledge-bases/{self.id}")
