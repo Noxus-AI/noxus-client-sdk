@@ -96,6 +96,8 @@ class ConfigDefinition(BaseModel):
                 raise ConfigError(f"Missing required config value for {key}")
             if self.default is not None:
                 value = self.default
+            if value == self.default:
+                return
         try:
             self.type.validate(value)
         except Exception as e:
