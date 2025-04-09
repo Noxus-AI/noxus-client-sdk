@@ -443,7 +443,21 @@ settings = ConversationSettings(
 Agents are autonomous AI assistants that can perform tasks with specific configurations.
 Agents use the same tools as conversations:
 
-````python
+#### Listing Agents
+
+```python
+# List all agents
+agents = client.agents.list()
+for agent in agents:
+    print(f"Agent ID: {agent.id}, Name: {agent.name}")
+
+# Get a specific agent
+agent = client.agents.get(agent_id="agent_id_here")
+```
+
+#### Creating an Agent
+
+```python
 from noxus_sdk.resources.assistants import AgentSettings
 from noxus_sdk.resources.conversations import WebResearchTool
 
@@ -465,15 +479,11 @@ agent_settings = AgentSettings(
 # Create a new agent
 agent = client.agents.create(name="Example Agent", settings=agent_settings)
 print(f"Created Agent ID: {agent.id}")
+```
 
-# List all agents
-agents = client.agents.list()
-for agent in agents:
-    print(f"Agent ID: {agent.id}, Name: {agent.name}")
+#### Updating and Deleting an Agent
 
-# Get a specific agent
-agent = client.agents.get(agent_id="agent_id_here")
-
+```python
 # Update an agent
 updated_agent = client.agents.update(
     agent_id="agent_id_here",
@@ -483,22 +493,25 @@ updated_agent = client.agents.update(
 
 # Delete an agent
 client.agents.delete(agent_id="agent_id_here")
+```
 
-# Update and delete using the agent instance
+We can also update and delete using the agent instance
+
+```python
 agent = client.agents.get(agent_id="agent_id_here")
 agent.update(name="New Name", settings=agent_settings)
 agent.delete()
+```
 
 #### Starting Conversations with Agents
 
 You can start a conversation with an agent using the `agent_id` parameter in the conversation creation process:
 
 ```python
-# First, get the agent you want to chat with
+# Get the agent you want to chat with
 agent = client.agents.get(agent_id="agent_id_here")
 
 # Create a conversation with this agent
-# Note: When using agent_id, you don't need to provide settings
 conversation = client.conversations.create(
     name="Chat with Agent",
     agent_id=agent.id
@@ -508,8 +521,11 @@ conversation = client.conversations.create(
 message = MessageRequest(content="Hello, can you help me with something?")
 response = conversation.add_message(message)
 print(f"Agent Response: {response.message_parts}")
+```
 
-# You can also create a conversation with the agent asynchronously
+You can also create a conversation with the agent asynchronously
+
+```python
 async def create_agent_conversation():
     agent = await client.agents.aget(agent_id="agent_id_here")
     conversation = await client.conversations.acreate(
@@ -517,14 +533,29 @@ async def create_agent_conversation():
         agent_id=agent.id
     )
     return conversation
+```
 
-# Using this approach, the agent's settings, tools, and capabilities are
-# automatically applied to the conversation without needing to specify them manually
-````
+> 💡 **Tip**
+>
+> When providing an `agent_id` to a conversation, you don't need to provide settings. With this approach, the agent's settings, tools, and capabilities are automatically applied to the conversation without needing to specify them manually
 
 ### Knowledge Bases
 
 Knowledge bases allow you to store and retrieve information that the AI can use to enhance its responses:
+
+#### Listing Knowledge Bases
+
+```python
+# List all knowledge bases
+knowledge_bases = client.knowledge_bases.list(page=1, page_size=10)
+for kb in knowledge_bases:
+    print(f"Knowledge Base ID: {kb.id}, Name: {kb.name}")
+
+# Get a specific knowledge base
+kb = client.knowledge_bases.get(knowledge_base_id="kb_id_here")
+```
+
+#### Creating a Knowledge Base
 
 ```python
 from noxus_sdk.resources.knowledge_bases import (
@@ -545,6 +576,7 @@ ingestion = KnowledgeBaseIngestion(
 )
 
 hybrid_settings = KnowledgeBaseHybridSettings(fts_weight=0.5)
+
 retrieval = KnowledgeBaseRetrieval(
     type="hybrid_reranking",
     hybrid_settings=hybrid_settings.model_dump(),
@@ -567,14 +599,6 @@ knowledge_base = client.knowledge_bases.create(
     settings_=kb_settings
 )
 print(f"Created Knowledge Base ID: {knowledge_base.id}")
-
-# List all knowledge bases
-knowledge_bases = client.knowledge_bases.list(page=1, page_size=10)
-for kb in knowledge_bases:
-    print(f"Knowledge Base ID: {kb.id}, Name: {kb.name}")
-
-# Get a specific knowledge base
-kb = client.knowledge_bases.get(knowledge_base_id="kb_id_here")
 ```
 
 The ingestion settings control how documents are processed, while the retrieval settings determine how information is retrieved from the knowledge base.
