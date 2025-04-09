@@ -1,11 +1,21 @@
 import pytest
+import os
 from noxus_sdk.workflows import WorkflowDefinition, ConfigError
 from noxus_sdk.client import Client
 
 
+@pytest.fixture
+def api_key():
+    return os.environ.get("NOXUS_API_KEY", "")
+
+
+@pytest.fixture
+def client(api_key: str):
+    return Client(api_key)
+
+
 @pytest.mark.test
-def test_generate_text():
-    client = Client("")
+def test_generate_text(client: Client):
     workflow = WorkflowDefinition()
     n = workflow.node("TextGenerationNode")
     with pytest.raises(ConfigError) as exc:
@@ -20,8 +30,7 @@ def test_generate_text():
     assert n.node_config["model"] == ["gpt-4o"]
 
 
-def test_full_workflow():
-    client = Client("")
+def test_full_workflow(client: Client):
     workflow = WorkflowDefinition()
     input = workflow.node("InputNode")
     ai = workflow.node("TextGenerationNode").config(
@@ -43,8 +52,7 @@ def test_full_workflow():
     assert len(workflow.edges) == 2
 
 
-def test_full_workflow_link_many():
-    client = Client("")
+def test_full_workflow_link_many(client: Client):
     workflow = WorkflowDefinition()
     input = workflow.node("InputNode")
     ai = workflow.node("TextGenerationNode").config(
