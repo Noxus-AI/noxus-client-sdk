@@ -121,11 +121,11 @@ class Conversation(BaseResource):
 
     async def aget_messages(self) -> list[Message]:
         response = await self.arefresh()
-        return response.messages
+        return [Message.model_validate(msg) for msg in response.messages]
 
     def get_messages(self) -> list[Message]:
         response = self.refresh()
-        return response.messages
+        return [Message.model_validate(msg) for msg in response.messages]
 
     async def aadd_message(self, message: MessageRequest) -> "Conversation":
         response = await self.client.apost(
@@ -149,7 +149,7 @@ class Conversation(BaseResource):
         if len(self.messages) == 0:
             raise ValueError("No response from the server")
 
-        return self.messages[-1]
+        return Message.model_validate(self.messages[-1])
 
 
 class ConversationService(BaseService[Conversation]):
