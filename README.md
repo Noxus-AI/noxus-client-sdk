@@ -305,7 +305,6 @@ response = conversation.add_message(kb_message)
 
 # Message with attached files
 file = ConversationFile(
-    status="sucess",  # Note the spelling in the API
     name="report.pdf",
     url="https://example.com/files/report.pdf"
 )

@@ -1,7 +1,7 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime
 from typing import Annotated, List, Literal
-from pydantic import BaseModel, Discriminator
+from pydantic import BaseModel, Discriminator, Field
 
 from noxus_sdk.resources.base import BaseResource, BaseService
 
@@ -76,9 +76,12 @@ class ConversationSettings(BaseModel):
 
 
 class ConversationFile(BaseModel):
-    status: Literal["sucess"] = "sucess"
+    status: Literal["success"] = "success"
     name: str
     url: str
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    size: int = 1
+    type: str = ""
 
 
 class MessageRequest(BaseModel):
