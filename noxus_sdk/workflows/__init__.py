@@ -193,6 +193,17 @@ class Node(BaseModel):
         if input.type == "variable_connector":
             if key is None:
                 raise ValueError("key is required for variable_connector")
+            connector_config = self.connector_config.get("inputs")
+            if not connector_config:
+                raise ValueError(f"connector_config is missing {self.connector_config}")
+            connector_inputs = {i["name"]: i for i in connector_config}
+            if name not in connector_inputs:
+                raise ValueError(
+                    f"Invalid key: {name} (possible: {list(connector_inputs.keys())})"
+                )
+            connector_keys = connector_inputs[name].get("keys", [])
+            if key not in connector_keys:
+                connector_keys.append(key)
             return EdgePoint(node_id=input.node_id, connector_name=input.name, key=key)
         return EdgePoint(node_id=input.node_id, connector_name=input.name, key=None)
 
@@ -208,6 +219,17 @@ class Node(BaseModel):
         if output.type == "variable_connector":
             if key is None:
                 raise ValueError("key is required for variable_connector")
+            connector_config = self.connector_config.get("outputs")
+            if not connector_config:
+                raise ValueError("connector_config is missing")
+            connector_outputs = {o["name"]: o for o in connector_config}
+            if name not in connector_outputs:
+                raise ValueError(
+                    f"Invalid key: {name} (possible: {list(connector_outputs.keys())})"
+                )
+            connector_keys = connector_outputs[name].get("keys", [])
+            if key not in connector_keys:
+                connector_keys.append(key)
             return EdgePoint(
                 node_id=output.node_id, connector_name=output.name, key=key
             )
@@ -225,6 +247,10 @@ class Node(BaseModel):
             NodeOutput(node_id=str(self.id), name=output["name"], type=output["type"])
             for output in node_type.outputs
         ]
+        self.connector_config = {
+            "inputs": node_type.inputs,
+            "outputs": node_type.outputs,
+        }
         self.display = {"position": {"x": x, "y": y}}
         return self
 
