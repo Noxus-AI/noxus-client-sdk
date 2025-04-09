@@ -87,10 +87,14 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         ]
 
     def get(self, knowledge_base_id: str) -> KnowledgeBase:
-        return self.client.get(f"/v1/knowledge-bases/{knowledge_base_id}")
+        knowledge_base = self.client.get(f"/v1/knowledge-bases/{knowledge_base_id}")
+        return KnowledgeBase(client=self.client, **knowledge_base)
 
     async def aget(self, knowledge_base_id: str) -> KnowledgeBase:
-        return await self.client.aget(f"/v1/knowledge-bases/{knowledge_base_id}")
+        knowledge_base = await self.client.aget(
+            f"/v1/knowledge-bases/{knowledge_base_id}"
+        )
+        return KnowledgeBase(client=self.client, **knowledge_base)
 
     def create(
         self,
@@ -99,7 +103,26 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         document_types: List[str],
         settings_: KnowledgeBaseSettings,
     ) -> KnowledgeBase:
-        return self.client.post(
+        knowledge_base = self.client.post(
+            "/v1/knowledge-bases",
+            {
+                "name": name,
+                "description": description,
+                "document_types": document_types,
+                "settings_": settings_.model_dump(),
+                "kb_type": "entity",
+            },
+        )
+        return KnowledgeBase(client=self.client, **knowledge_base)
+
+    async def acreate(
+        self,
+        name: str,
+        description: str,
+        document_types: List[str],
+        settings_: KnowledgeBaseSettings,
+    ) -> KnowledgeBase:
+        knowledge_base = await self.client.apost(
             "/v1/knowledge-bases",
             {
                 "name": name,
@@ -109,19 +132,4 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
             },
         )
 
-    async def acreate(
-        self,
-        name: str,
-        description: str,
-        document_types: List[str],
-        settings_: KnowledgeBaseSettings,
-    ) -> KnowledgeBase:
-        return await self.client.apost(
-            "/v1/knowledge-bases",
-            {
-                "name": name,
-                "description": description,
-                "document_types": document_types,
-                "settings_": settings_.model_dump(),
-            },
-        )
+        return KnowledgeBase(client=self.client, **knowledge_base)

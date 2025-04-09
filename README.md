@@ -504,21 +504,21 @@ ingestion = KnowledgeBaseIngestion(
     batch_size=10,
     default_chunk_size=1000,
     default_chunk_overlap=200,
-    enrich_chunks_mode="auto",
+    enrich_chunks_mode="inject_summary",
     enrich_pre_made_qa=True,
     methods={}
 )
 
 hybrid_settings = KnowledgeBaseHybridSettings(fts_weight=0.5)
 retrieval = KnowledgeBaseRetrieval(
-    type="hybrid",
+    type="hybrid_reranking",
     hybrid_settings=hybrid_settings.model_dump(),
     reranker_settings={}
 )
 
 # Define complete knowledge base settings
 kb_settings = KnowledgeBaseSettings(
-    allowed_sources=["pdf", "txt", "doc"],
+    allowed_sources=["Document", "Google Drive", "OneDrive"],
     ingestion=ingestion,
     retrieval=retrieval,
     embeddings={}
