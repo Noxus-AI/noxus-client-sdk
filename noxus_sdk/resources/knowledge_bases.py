@@ -3,7 +3,7 @@ import builtins
 
 from pydantic import BaseModel
 from typing import List, Literal, Optional, Any, Union
-from typing_extensions import TypeAlias
+from typing import TypeAlias
 from pathlib import Path
 
 from noxus_sdk.client import HttpxFile
@@ -55,7 +55,7 @@ class BaseDocumentSourceConfig(BaseModel):
 
 # Regular document source config
 class SpotFileConfig(BaseDocumentSourceConfig):
-    files: List[File]
+    files: list[File]
 
 
 # Upload document source config
@@ -67,7 +67,7 @@ class UploadFileConfig(BaseDocumentSourceConfig):
 
 # Document source with discriminated union
 class DocumentSourceConfig(BaseModel):
-    files: List[File]
+    files: list[File]
 
 
 class DocumentSource(BaseModel):
@@ -114,7 +114,7 @@ class KnowledgeBaseDocument(BaseModel):
     source_type: str
     created_at: str
     updated_at: str
-    error: Optional[dict] = None
+    error: dict | None = None
 
 
 class CreateDocument(BaseModel):
@@ -124,8 +124,8 @@ class CreateDocument(BaseModel):
 
 
 class UpdateDocument(BaseModel):
-    prefix: Optional[str] = None
-    status: Optional[DocumentStatus] = None
+    prefix: str | None = None
+    status: DocumentStatus | None = None
 
 
 class KnowledgeBase(BaseResource):
@@ -175,7 +175,7 @@ class KnowledgeBase(BaseResource):
 
     def get_runs(
         self, status: RunStatus | None = None, run_ids: str | None = None
-    ) -> List[Run]:
+    ) -> list[Run]:
         params = {}
         if status:
             params["status"] = status
@@ -187,7 +187,7 @@ class KnowledgeBase(BaseResource):
 
     async def aget_runs(
         self, status: RunStatus | None = None, run_ids: str | None = None
-    ) -> List[Run]:
+    ) -> list[Run]:
         params = {}
         if status:
             params["status"] = status
@@ -224,10 +224,10 @@ class KnowledgeBase(BaseResource):
         return KnowledgeBaseDocument(**response)
 
     def upload_document(
-        self, files: List[Union[str, Path]], prefix: str = "/"
-    ) -> List[RunID]:
-        files_list: List[HttpxFile] = [
-            ("files", (Path(file).name, io.open(str(file), "rb"), None))
+        self, files: list[str | Path], prefix: str = "/"
+    ) -> list[RunID]:
+        files_list: list[HttpxFile] = [
+            ("files", (Path(file).name, open(str(file), "rb"), None))
             for file in files
         ]
 
@@ -239,10 +239,10 @@ class KnowledgeBase(BaseResource):
         return response
 
     async def aupload_document(
-        self, files: List[Union[str, Path]], prefix: str = "/"
-    ) -> List[RunID]:
-        files_list: List[HttpxFile] = [
-            ("files", (Path(file).name, io.open(str(file), "rb"), None))
+        self, files: list[str | Path], prefix: str = "/"
+    ) -> list[RunID]:
+        files_list: list[HttpxFile] = [
+            ("files", (Path(file).name, open(str(file), "rb"), None))
             for file in files
         ]
 
@@ -285,7 +285,7 @@ class KnowledgeBase(BaseResource):
 
     def list_documents(
         self, status: DocumentStatus | None = None, page: int = 1, page_size: int = 10
-    ) -> List[KnowledgeBaseDocument]:
+    ) -> list[KnowledgeBaseDocument]:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if status:
             params["status"] = status
@@ -299,7 +299,7 @@ class KnowledgeBase(BaseResource):
 
     async def alist_documents(
         self, status: DocumentStatus | None = None, page: int = 1, page_size: int = 10
-    ) -> List[KnowledgeBaseDocument]:
+    ) -> list[KnowledgeBaseDocument]:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if status:
             params["status"] = status
@@ -394,7 +394,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         knowledge_base_id: str,
         status: RunStatus | None = None,
         run_ids: str | None = None,
-    ) -> List[Run]:
+    ) -> builtins.list[Run]:
         params = {}
         if status:
             params["status"] = status
@@ -411,7 +411,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         knowledge_base_id: str,
         status: RunStatus | None = None,
         run_ids: str | None = None,
-    ) -> List[Run]:
+    ) -> builtins.list[Run]:
         params = {}
         if status:
             params["status"] = status
@@ -479,7 +479,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         status: DocumentStatus | None = None,
         page: int = 1,
         page_size: int = 10,
-    ) -> List[KnowledgeBaseDocument]:
+    ) -> builtins.list[KnowledgeBaseDocument]:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if status:
             params["status"] = status
@@ -497,7 +497,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         status: DocumentStatus | None = None,
         page: int = 1,
         page_size: int = 10,
-    ) -> List[KnowledgeBaseDocument]:
+    ) -> builtins.list[KnowledgeBaseDocument]:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if status:
             params["status"] = status
@@ -528,7 +528,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
 
     def train_document(
         self, knowledge_base_id: str, source: Source, prefix: str = "/"
-    ) -> List[RunID]:
+    ) -> builtins.list[RunID]:
         response = self.client.post(
             f"/v1/knowledge-bases/{knowledge_base_id}/generic_train",
             body=source.model_dump(),
@@ -538,7 +538,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
 
     async def atrain_document(
         self, knowledge_base_id: str, source: Source, prefix: str = "/"
-    ) -> List[RunID]:
+    ) -> builtins.list[RunID]:
         response = await self.client.apost(
             f"/v1/knowledge-bases/{knowledge_base_id}/generic_train",
             body=source.model_dump(),
@@ -547,10 +547,10 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         return response
 
     def upload_document(
-        self, knowledge_base_id: str, files: List[Union[str, Path]], prefix: str = "/"
-    ) -> List[RunID]:
-        files_list: List[HttpxFile] = [
-            ("files", (Path(file).name, io.open(str(file), "rb"), None))
+        self, knowledge_base_id: str, files: builtins.list[str | Path], prefix: str = "/"
+    ) -> builtins.list[RunID]:
+        files_list: list[HttpxFile] = [
+            ("files", (Path(file).name, open(str(file), "rb"), None))
             for file in files
         ]
 
@@ -562,10 +562,10 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         return response
 
     async def aupload_document(
-        self, knowledge_base_id: str, files: List[Union[str, Path]], prefix: str = "/"
-    ) -> List[RunID]:
-        files_list: List[HttpxFile] = [
-            ("files", (Path(file).name, io.open(str(file), "rb"), None))
+        self, knowledge_base_id: str, files: builtins.list[str | Path], prefix: str = "/"
+    ) -> builtins.list[RunID]:
+        files_list: list[HttpxFile] = [
+            ("files", (Path(file).name, open(str(file), "rb"), None))
             for file in files
         ]
 

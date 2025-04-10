@@ -3,8 +3,8 @@ import httpx
 from typing import List, Any, Union, BinaryIO, Tuple, Optional
 
 FileContent = Union[BinaryIO, bytes, str]
-HttpxFile = Tuple[str, Tuple[str, FileContent, Optional[str]]]
-RequestFiles = Union[dict[str, Any], List[HttpxFile], None]
+HttpxFile = tuple[str, tuple[str, FileContent, str | None]]
+RequestFiles = Union[dict[str, Any], list[HttpxFile], None]
 
 
 class Requester:
