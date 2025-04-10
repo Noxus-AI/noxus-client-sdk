@@ -408,8 +408,8 @@ Agents are autonomous AI assistants that can perform tasks with specific configu
 Agents use the same tools as conversations:
 
 ```python
-from noxus_sdk.resources.assistants import AgentSettings
 from noxus_sdk.resources.conversations import WebResearchTool
+from noxus_sdk.resources.assistants import AgentSettings
 
 # Define agent tool
 tool = WebResearchTool(
@@ -452,6 +452,7 @@ client.agents.delete(agent_id="agent_id_here")
 agent = client.agents.get(agent_id="agent_id_here")
 agent.update(name="New Name", settings=agent_settings)
 agent.delete()
+```
 
 #### Starting Conversations with Agents
 
