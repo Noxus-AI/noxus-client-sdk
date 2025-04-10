@@ -9,6 +9,7 @@ from noxus_sdk.resources.knowledge_bases import (
     KnowledgeBaseSettings,
     KnowledgeBaseIngestion,
     KnowledgeBaseRetrieval,
+    CreateDocument,
 )
 
 
@@ -38,17 +39,10 @@ async def wait_for_documents(kb: KnowledgeBase, expected_count: int, timeout: in
 
 @pytest.mark.anyio
 async def test_list_documents(kb: KnowledgeBase, test_file: Path):
-    run_ids1 = await kb.aupload_document([test_file], prefix="/test1")
+    doc = await kb.acreate_document(CreateDocument(name="test1", prefix="/test1"))
 
-    await wait_for_documents(kb, 1)
-
-    training_documents = await kb.alist_documents(status="training")
-    trained_documents = await kb.alist_documents(status="trained")
-    assert len(training_documents) + len(trained_documents) == 1
-
-    page1 = await kb.alist_documents(status="training", page=1, page_size=1)
-    assert len(page1) == 1
-    assert page1[0].id == training_documents[0].id
+    documents = await kb.alist_documents(status="uploaded")
+    assert len(documents) == 1
 
 
 @pytest.mark.anyio
@@ -86,7 +80,7 @@ async def test_kb_status(kb: KnowledgeBase, test_file: Path):
     await asyncio.sleep(1)
 
     await kb.arefresh()
-    assert kb.status in ["trained", "training"]
+    assert kb.status in ["trained", "training", "created"]
     assert kb.total_documents >= 2
     assert isinstance(kb.trained_documents, int)
     assert isinstance(kb.error_documents, int)

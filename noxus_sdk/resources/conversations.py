@@ -87,8 +87,9 @@ class ConversationFile(BaseModel):
 
 class MessageRequest(BaseModel):
     content: str
-    tool: Literal["web_research", "kb_qa"] | str | None = None
+    tool: Literal["web_research", "kb_qa", "workflow"] | str | None = None
     kb_id: str | None = None
+    workflow_id: str | None = None
     files: list[ConversationFile] | None = None
     model_selection: list[str] | None = None
 
