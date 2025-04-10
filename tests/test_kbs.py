@@ -47,15 +47,10 @@ async def test_list_documents(kb: KnowledgeBase, test_file: Path):
 
 @pytest.mark.anyio
 async def test_document_operations(kb: KnowledgeBase, test_file: Path):
-    run_ids = await kb.aupload_document([test_file], prefix="/test")
+    doc = await kb.acreate_document(CreateDocument(name="test1", prefix="/test1"))
 
-    await wait_for_documents(kb, 1)
-
-    training_documents = await kb.alist_documents(status="training")
-    trained_documents = await kb.alist_documents(status="trained")
-    assert len(training_documents) + len(trained_documents) == 1
-    docs = trained_documents + training_documents
-    doc = docs[0]
+    documents = await kb.alist_documents(status="uploaded")
+    assert len(documents) == 1
     updated_doc = await kb.aupdate_document(
         doc.id, UpdateDocument(prefix="/updated/path")
     )
@@ -71,16 +66,11 @@ async def test_document_operations(kb: KnowledgeBase, test_file: Path):
 
 @pytest.mark.anyio
 async def test_kb_status(kb: KnowledgeBase, test_file: Path):
-    run_ids1 = await kb.aupload_document([test_file], prefix="/test1")
-    run_ids2 = await kb.aupload_document([test_file], prefix="/test2")
-
-    assert len(run_ids1) > 0
-    assert len(run_ids2) > 0
-
-    await asyncio.sleep(1)
+    doc1 = await kb.acreate_document(CreateDocument(name="test1", prefix="/test1"))
+    doc2 = await kb.acreate_document(CreateDocument(name="test2", prefix="/test2"))
 
     await kb.arefresh()
-    assert kb.status in ["trained", "training", "created"]
+    assert kb.status in ["created"]
     assert kb.total_documents >= 2
     assert isinstance(kb.trained_documents, int)
     assert isinstance(kb.error_documents, int)
@@ -137,3 +127,19 @@ async def test_kb_cleanup(kb: KnowledgeBase, test_file: Path):
 
     with pytest.raises(Exception):
         await kb.arefresh()
+
+@pytest.mark.anyio
+async def test_kb_training(kb: KnowledgeBase, test_file: Path):
+    await kb.aupload_document([test_file], prefix="/test1")
+    assert await wait_for_documents(kb, 1)
+    await kb.arefresh()
+    assert kb.status in ["training", "created"]
+
+    docs = await kb.alist_documents(status="training")
+    assert len(docs) == 1
+    doc = docs[0]
+    assert doc.status == "training"
+    assert doc.id == kb.id
+    
+    
+    
