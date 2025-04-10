@@ -6,6 +6,7 @@ dependencies = [
     "anyio",
     "pydantic>=2.0",
     "httpx",
+    "aiofiles",
 ]
 
 [build-system]

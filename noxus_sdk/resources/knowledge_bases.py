@@ -1,8 +1,8 @@
-import io
 import builtins
+import aiofiles
 
 from pydantic import BaseModel
-from typing import List, Literal, Optional, Any, Union
+from typing import Literal, Any
 from typing import TypeAlias, TYPE_CHECKING
 from pathlib import Path
 
@@ -69,7 +69,7 @@ class UploadFileConfig(BaseDocumentSourceConfig):
 
 # Document source with discriminated union
 class DocumentSourceConfig(BaseModel):
-    files: list[File]
+    files: builtins.list[File]
 
 
 class DocumentSource(BaseModel):
@@ -136,7 +136,7 @@ class KnowledgeBase(BaseResource):
     name: str
     status: str
     description: str
-    document_types: list[str]
+    document_types: builtins.list[str]
     kb_type: str
     size: int
     num_docs: int
@@ -148,12 +148,12 @@ class KnowledgeBase(BaseResource):
     error_documents: int
     uploaded_documents: int
     source_types: dict
-    training_source_types: list[str]
+    training_source_types: builtins.list[str]
     settings_: KnowledgeBaseSettings
     retrieval: dict | None = None
     error: dict | None = None
     embeddings: dict | None = None
-    documents: list[KnowledgeBaseDocument] = []
+    documents: builtins.list[KnowledgeBaseDocument] = []
 
     def refresh(self) -> "KnowledgeBase":
         response = self.client.get(f"/v1/knowledge-bases/{self.id}")
@@ -177,7 +177,7 @@ class KnowledgeBase(BaseResource):
 
     def get_runs(
         self, status: RunStatus | None = None, run_ids: str | None = None
-    ) -> list[Run]:
+    ) -> builtins.list[Run]:
         params = {}
         if status:
             params["status"] = status
@@ -189,7 +189,7 @@ class KnowledgeBase(BaseResource):
 
     async def aget_runs(
         self, status: RunStatus | None = None, run_ids: str | None = None
-    ) -> list[Run]:
+    ) -> builtins.list[Run]:
         params = {}
         if status:
             params["status"] = status
@@ -226,12 +226,12 @@ class KnowledgeBase(BaseResource):
         return KnowledgeBaseDocument(**response)
 
     def upload_document(
-        self, files: list[str | Path], prefix: str = "/"
-    ) -> list[RunID]:
-        files_list: list[HttpxFile] = [
-            ("files", (Path(file).name, open(str(file), "rb"), None))
-            for file in files
-        ]
+        self, files: builtins.list[str | Path], prefix: str = "/"
+    ) -> builtins.list[RunID]:
+        files_list: builtins.list[HttpxFile] = []
+        for file in files:
+            with open(str(file), "rb") as f:
+                files_list.append(("files", (Path(file).name, f.read(), None)))
 
         return self.client.post(
             f"/v1/knowledge-bases/{self.id}/upload_train",
@@ -240,12 +240,13 @@ class KnowledgeBase(BaseResource):
         )
 
     async def aupload_document(
-        self, files: list[str | Path], prefix: str = "/"
-    ) -> list[RunID]:
-        files_list: list[HttpxFile] = [
-            ("files", (Path(file).name, open(str(file), "rb"), None))
-            for file in files
-        ]
+        self, files: builtins.list[str | Path], prefix: str = "/"
+    ) -> builtins.list[RunID]:
+        files_list: builtins.list[HttpxFile] = []
+        for file in files:
+            async with aiofiles.open(str(file), "rb") as f:
+                content = await f.read()
+                files_list.append(("files", (Path(file).name, content, None)))
 
         return await self.client.apost(
             f"/v1/knowledge-bases/{self.id}/upload_train",
@@ -285,7 +286,7 @@ class KnowledgeBase(BaseResource):
 
     def list_documents(
         self, status: DocumentStatus | None = None, page: int = 1, page_size: int = 10
-    ) -> list[KnowledgeBaseDocument]:
+    ) -> builtins.list[KnowledgeBaseDocument]:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if status:
             params["status"] = status
@@ -298,7 +299,7 @@ class KnowledgeBase(BaseResource):
 
     async def alist_documents(
         self, status: DocumentStatus | None = None, page: int = 1, page_size: int = 10
-    ) -> list[KnowledgeBaseDocument]:
+    ) -> builtins.list[KnowledgeBaseDocument]:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if status:
             params["status"] = status
@@ -311,7 +312,7 @@ class KnowledgeBase(BaseResource):
 
 
 class KnowledgeBaseService(BaseService[KnowledgeBase]):
-    def list(self, page: int = 1, page_size: int = 10) -> list[KnowledgeBase]:
+    def list(self, page: int = 1, page_size: int = 10) -> builtins.list[KnowledgeBase]:
         knowledge_bases = self.client.pget(
             "/v1/knowledge-bases", params={"page": page, "page_size": page_size}
         )
@@ -543,12 +544,15 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         )
 
     def upload_document(
-        self, knowledge_base_id: str, files: builtins.list[str | Path], prefix: str = "/"
+        self,
+        knowledge_base_id: str,
+        files: builtins.list[str | Path],
+        prefix: str = "/",
     ) -> builtins.list[RunID]:
-        files_list: list[HttpxFile] = [
-            ("files", (Path(file).name, open(str(file), "rb"), None))
-            for file in files
-        ]
+        files_list: builtins.list[HttpxFile] = []
+        for file in files:
+            with open(str(file), "rb") as f:
+                files_list.append(("files", (Path(file).name, f.read(), None)))
 
         return self.client.post(
             f"/v1/knowledge-bases/{knowledge_base_id}/upload_train",
@@ -557,12 +561,16 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         )
 
     async def aupload_document(
-        self, knowledge_base_id: str, files: builtins.list[str | Path], prefix: str = "/"
+        self,
+        knowledge_base_id: str,
+        files: builtins.list[str | Path],
+        prefix: str = "/",
     ) -> builtins.list[RunID]:
-        files_list: list[HttpxFile] = [
-            ("files", (Path(file).name, open(str(file), "rb"), None))
-            for file in files
-        ]
+        files_list: builtins.list[HttpxFile] = []
+        for file in files:
+            async with aiofiles.open(str(file), "rb") as f:
+                content = await f.read()
+                files_list.append(("files", (Path(file).name, content, None)))
 
         return await self.client.apost(
             f"/v1/knowledge-bases/{knowledge_base_id}/upload_train",
