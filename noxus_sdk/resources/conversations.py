@@ -110,14 +110,12 @@ class Conversation(BaseResource):
 
     def refresh(self) -> "Conversation":
         response = self.client.get(f"/v1/conversations/{self.id}")
-        for key, value in response.items():
-            setattr(self, key, value)
+        self = Conversation(client=self.client, **response)
         return self
 
     async def arefresh(self) -> "Conversation":
         response = await self.client.aget(f"/v1/conversations/{self.id}")
-        for key, value in response.items():
-            setattr(self, key, value)
+        self = Conversation(client=self.client, **response)
         return self
 
     async def aget_messages(self) -> list[Message]:
