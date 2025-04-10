@@ -12,7 +12,7 @@ client = Client(api_key)
 existing_workflows = {w.name: w.id for w in client.workflows.list()}
 
 # Create a new workflow for generating cheese poems
-workflow = WorkflowDefinition(name="🧀 Poem")
+workflow = WorkflowDefinition(client=client, name="🧀 Poem")
 
 # Set up input node with a fixed value "cheese"
 input = workflow.node("InputNode").config(fixed_value=True, value="cheese")
@@ -31,15 +31,26 @@ workflow.link(ai.output(), output.input())
 
 # Save or update the workflow
 if "Noxus Poem" not in existing_workflows:
-    workflow_id = client.workflows.save(workflow).id
+    w2 = workflow.save()
+    print("Creating new workflow", w2)
+    workflow_id = workflow.id
 else:
+    print("Using existing workflow", existing_workflows["Noxus Poem"])
     workflow_id = existing_workflows["Noxus Poem"]
+    workflow = client.workflows.get(workflow_id)
 
 # Update the input to use "Noxus AI" instead of "cheese"
-input = workflow.node("InputNode").config(fixed_value=True, value="Noxus AI")
+input_node = next(n for n in workflow.nodes if n.type == "InputNode")
+input_node.config(fixed_value=True, value="Noxus AI")
 
 # Rename the workflow
 workflow.name = "Noxus Poem"
 
 # Update the existing workflow with the new configuration
-client.workflows.update(workflow_id, workflow)
+workflow.update()
+
+run_data = workflow.run({}).wait()
+output = run_data.output[
+    next(n for n in workflow.nodes if n.type == "OutputNode").outputs[0].id
+]["text"]
+print(output)
