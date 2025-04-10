@@ -4,14 +4,17 @@ from uuid import uuid4
 from noxus_sdk.resources.conversations import (
     ConversationSettings,
     MessageRequest,
-    WebResearchTool,
-    NoxusQaTool,
-    KnowledgeBaseSelectorTool,
-    WorkflowTool,
     ConversationFile,
 )
-from noxus_sdk.resources.assistants import ConversationSettings
-from noxus_sdk.resources.conversations import WorkflowInfo
+from noxus_sdk.resources.assistants import (
+    AgentSettings,
+    WorkflowInfo,
+    WorkflowTool,
+    KnowledgeBaseSelectorTool,
+    NoxusQaTool,
+    WebResearchTool,
+    KnowledgeBaseQaTool,
+)
 from noxus_sdk.resources.workflows import (
     WorkflowDefinition,
 )
@@ -20,11 +23,12 @@ from noxus_sdk.resources.knowledge_bases import (
     KnowledgeBaseIngestion,
     KnowledgeBaseRetrieval,
 )
+from noxus_sdk.client import Client
 
 
 @pytest.fixture
 def agent_settings():
-    return ConversationSettings(
+    return AgentSettings(
         model_selection=["gpt-4o"],
         temperature=0.7,
         tools=[WebResearchTool(), NoxusQaTool()],
@@ -34,7 +38,7 @@ def agent_settings():
 
 
 @pytest.mark.anyio
-async def test_create_agent(client, agent_settings):
+async def test_create_agent(client: Client, agent_settings: AgentSettings):
     agent = await client.agents.acreate(name="Test Agent", settings=agent_settings)
 
     try:
@@ -60,7 +64,7 @@ async def test_create_agent(client, agent_settings):
 
 
 @pytest.mark.anyio
-async def test_list_agents(client, agent_settings):
+async def test_list_agents(client: Client, agent_settings: AgentSettings):
     agent1 = await client.agents.acreate(name="Test Agent 1", settings=agent_settings)
     agent2 = await client.agents.acreate(name="Test Agent 2", settings=agent_settings)
 
@@ -77,7 +81,7 @@ async def test_list_agents(client, agent_settings):
 
 
 @pytest.mark.anyio
-async def test_update_agent(client, agent_settings):
+async def test_update_agent(client: Client, agent_settings: AgentSettings):
     agent = await client.agents.acreate(name="Original Name", settings=agent_settings)
 
     # Create a workflow for testing
@@ -120,7 +124,13 @@ async def test_update_agent(client, agent_settings):
         new_settings = ConversationSettings(
             model_selection=["gpt-4o"],
             temperature=0.5,
-            tools=[WorkflowTool(workflow=WorkflowInfo(id=created_workflow.id, name=created_workflow.name))],
+            tools=[
+                WorkflowTool(
+                    workflow=WorkflowInfo(
+                        id=created_workflow.id, name=created_workflow.name
+                    )
+                )
+            ],
             max_tokens=200,
             extra_instructions="Updated instructions",
         )
@@ -136,7 +146,7 @@ async def test_update_agent(client, agent_settings):
         assert updated.definition.extra_instructions == "Updated instructions"
         assert len(updated.definition.tools) == 1
         assert updated.definition.tools[0].type == "workflow"
-        assert updated.definition.tools[0].workflow_id == created_workflow.id
+        assert updated.definition.tools[0].workflow.id == created_workflow.id
 
         # Test instance update method with real KB
         instance_updated = await client.agents.aget(agent.id)
@@ -163,18 +173,19 @@ async def test_update_agent(client, agent_settings):
 
 
 @pytest.mark.anyio
-async def test_create_conversation_with_agent(client, agent_settings):
+async def test_create_conversation_with_agent(
+    client: Client, agent_settings: AgentSettings
+):
     # Create an agent
     agent = await client.agents.acreate(
         name="Conversation Agent", settings=agent_settings
     )
 
+    # Create a conversation with the agent
+    conversation = await client.conversations.acreate(
+        name="Agent Conversation", agent_id=agent.id
+    )
     try:
-        # Create a conversation with the agent
-        conversation = await client.conversations.acreate(
-            name="Agent Conversation", agent_id=agent.id
-        )
-
         assert conversation.name == "Agent Conversation"
 
         # Send a message to the conversation
@@ -192,7 +203,7 @@ async def test_create_conversation_with_agent(client, agent_settings):
 
 
 @pytest.mark.anyio
-async def test_agent_with_all_tool_types(client):
+async def test_agent_with_all_tool_types(client: Client):
     # Create a workflow for testing
     workflow = WorkflowDefinition(client=client, name="Test All Tools Workflow")
     input_node = workflow.node("InputNode")
@@ -236,7 +247,11 @@ async def test_agent_with_all_tool_types(client):
             WebResearchTool(),
             NoxusQaTool(),
             KnowledgeBaseSelectorTool(),
-            WorkflowTool(workflow=WorkflowInfo(id=created_workflow.id, name=created_workflow.name)),
+            WorkflowTool(
+                workflow=WorkflowInfo(
+                    id=created_workflow.id, name=created_workflow.name
+                )
+            ),
         ],
         max_tokens=150,
     )
@@ -258,7 +273,7 @@ async def test_agent_with_all_tool_types(client):
         workflow_tool = next(
             tool for tool in agent.definition.tools if tool.type == "workflow"
         )
-        assert workflow_tool.workflow_id == created_workflow.id
+        assert workflow_tool.workflow.id == created_workflow.id
 
     finally:
         await client.agents.adelete(agent.id)
@@ -266,14 +281,14 @@ async def test_agent_with_all_tool_types(client):
 
 
 @pytest.mark.anyio
-async def test_nonexistent_agent(client):
+async def test_nonexistent_agent(client: Client):
     agent_id = str(uuid4())  # Mock agent ID
     with pytest.raises(httpx.HTTPStatusError):
         res = await client.agents.aget(agent_id)
 
 
 @pytest.mark.anyio
-async def test_delete_agent(client, agent_settings):
+async def test_delete_agent(client: Client, agent_settings: AgentSettings):
     # Create an agent
     agent = await client.agents.acreate(name="To Be Deleted", settings=agent_settings)
 
@@ -285,7 +300,7 @@ async def test_delete_agent(client, agent_settings):
         await client.agents.aget(agent.id)
 
 
-def test_synchronous_agent_operations(client, agent_settings):
+def test_synchronous_agent_operations(client: Client, agent_settings: AgentSettings):
     # Test synchronous create
     agent = client.agents.create(name="Sync Agent", settings=agent_settings)
 
