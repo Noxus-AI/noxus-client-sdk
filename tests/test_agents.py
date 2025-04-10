@@ -4,7 +4,6 @@ from uuid import uuid4
 from noxus_sdk.resources.conversations import (
     ConversationSettings,
     MessageRequest,
-    ConversationFile,
 )
 from noxus_sdk.resources.assistants import (
     AgentSettings,
@@ -13,7 +12,6 @@ from noxus_sdk.resources.assistants import (
     KnowledgeBaseSelectorTool,
     NoxusQaTool,
     WebResearchTool,
-    KnowledgeBaseQaTool,
 )
 from noxus_sdk.resources.workflows import (
     WorkflowDefinition,
