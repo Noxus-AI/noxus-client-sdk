@@ -1,8 +1,10 @@
 import os
-import anyio
 import httpx
-import time
-from typing import Any
+from typing import Any, BinaryIO
+
+FileContent = BinaryIO | bytes | str
+HttpxFile = tuple[str, tuple[str, FileContent, str | None]]
+RequestFiles = dict[str, Any] | list[HttpxFile] | None
 
 
 class Requester:
@@ -18,6 +20,7 @@ class Requester:
         url: str,
         headers: dict | None = None,
         json: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
@@ -33,6 +36,7 @@ class Requester:
                 headers=headers_,
                 follow_redirects=True,
                 json=json,
+                files=files,
                 params=params,
                 timeout=timeout or httpx.USE_CLIENT_DEFAULT,
             )
@@ -78,13 +82,20 @@ class Requester:
     async def apost(
         self,
         url: str,
-        body: Any,
+        body: Any | None = None,
         headers: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
         return await self.arequest(
-            "POST", url, json=body, headers=headers, timeout=timeout, params=params
+            "POST",
+            url,
+            json=body,
+            headers=headers,
+            files=files,
+            params=params,
+            timeout=timeout,
         )
 
     async def apatch(
@@ -112,6 +123,7 @@ class Requester:
         url: str,
         headers: dict | None = None,
         json: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
@@ -126,6 +138,7 @@ class Requester:
             headers=headers_,
             follow_redirects=True,
             json=json,
+            files=files,
             params=params,
             timeout=timeout or 10,
         )
@@ -177,13 +190,20 @@ class Requester:
     def post(
         self,
         url: str,
-        body: Any,
+        body: Any | None = None,
         headers: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
         return self.request(
-            "POST", url, json=body, headers=headers, timeout=timeout, params=params
+            "POST",
+            url,
+            json=body,
+            headers=headers,
+            files=files,
+            params=params,
+            timeout=timeout,
         )
 
     def delete(
