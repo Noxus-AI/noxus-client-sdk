@@ -2,9 +2,14 @@ import os
 import anyio
 import httpx
 import time
-from typing import List, Any
+from typing import List, Any, Union, BinaryIO, Tuple, Optional
 
 from regex import W
+
+# Define more precise types for file uploads
+FileContent = Union[BinaryIO, bytes, str]
+HttpxFile = Tuple[str, Tuple[str, FileContent, Optional[str]]]
+RequestFiles = Union[dict[str, Any], List[HttpxFile], None]
 
 
 class Requester:
@@ -20,6 +25,7 @@ class Requester:
         url: str,
         headers: dict | None = None,
         json: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
@@ -35,6 +41,7 @@ class Requester:
                 headers=headers_,
                 follow_redirects=True,
                 json=json,
+                files=files,
                 params=params,
                 timeout=timeout or httpx.USE_CLIENT_DEFAULT,
             )
@@ -80,13 +87,20 @@ class Requester:
     async def apost(
         self,
         url: str,
-        body: Any,
+        body: Any | None = None,
         headers: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
         return await self.arequest(
-            "POST", url, json=body, headers=headers, timeout=timeout, params=params
+            "POST",
+            url,
+            json=body,
+            headers=headers,
+            files=files,
+            params=params,
+            timeout=timeout,
         )
 
     async def apatch(
@@ -114,6 +128,7 @@ class Requester:
         url: str,
         headers: dict | None = None,
         json: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
@@ -128,6 +143,7 @@ class Requester:
             headers=headers_,
             follow_redirects=True,
             json=json,
+            files=files,
             params=params,
             timeout=timeout or 10,
         )
@@ -179,13 +195,20 @@ class Requester:
     def post(
         self,
         url: str,
-        body: Any,
+        body: Any | None = None,
         headers: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
         return self.request(
-            "POST", url, json=body, headers=headers, timeout=timeout, params=params
+            "POST",
+            url,
+            json=body,
+            headers=headers,
+            files=files,
+            params=params,
+            timeout=timeout,
         )
 
     def delete(
