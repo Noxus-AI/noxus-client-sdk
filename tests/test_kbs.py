@@ -1,15 +1,16 @@
-import pytest
-import tempfile
-import os
 import asyncio
+import os
+import tempfile
 from pathlib import Path
+
+import pytest
 from noxus_sdk.resources.knowledge_bases import (
+    CreateDocument,
     KnowledgeBase,
-    UpdateDocument,
-    KnowledgeBaseSettings,
     KnowledgeBaseIngestion,
     KnowledgeBaseRetrieval,
-    CreateDocument,
+    KnowledgeBaseSettings,
+    UpdateDocument,
 )
 
 

@@ -1,25 +1,18 @@
 from pydantic import BaseModel
+
 from noxus_sdk.resources.base import BaseResource, BaseService
-from noxus_sdk.resources.conversations import AnyToolSettings
-
-
-class AgentSettings(BaseModel):
-    model_selection: list[str]
-    temperature: float
-    tools: list[AnyToolSettings]
-    max_tokens: int | None = None
-    extra_instructions: str | None = None
+from noxus_sdk.resources.conversations import AnyToolSettings, ConversationSettings
 
 
 class Agent(BaseResource):
     id: str
     name: str
-    definition: AgentSettings
+    definition: ConversationSettings
 
-    def update(self, name: str, settings: AgentSettings) -> "Agent":
+    def update(self, name: str, settings: ConversationSettings) -> "Agent":
         result = self.client.patch(
             f"/v1/agents/{self.id}",
-            {"name": name, "settings": settings},
+            {"name": name, "definition": settings.model_dump()},
         )
         self = Agent(client=self.client, **result)
         return self  # noqa: RET504
@@ -37,15 +30,15 @@ class AgentService(BaseService[Agent]):
         results = self.client.pget("/v1/agents")
         return [Agent(client=self.client, **result) for result in results]
 
-    def create(self, name: str, settings: AgentSettings) -> Agent:
+    def create(self, name: str, settings: ConversationSettings) -> Agent:
         result = self.client.post(
-            "/v1/agents", {"name": name, "settings": settings.model_dump()}
+            "/v1/agents", {"name": name, "definition": settings.model_dump()}
         )
         return Agent(client=self.client, **result)
 
-    async def acreate(self, name: str, settings: AgentSettings) -> Agent:
+    async def acreate(self, name: str, settings: ConversationSettings) -> Agent:
         result = await self.client.apost(
-            "/v1/agents", {"name": name, "settings": settings.model_dump()}
+            "/v1/agents", {"name": name, "definition": settings.model_dump()}
         )
         return Agent(client=self.client, **result)
 
@@ -57,17 +50,19 @@ class AgentService(BaseService[Agent]):
         result = await self.client.aget(f"/v1/agents/{agent_id}")
         return Agent(client=self.client, **result)
 
-    def update(self, agent_id: str, name: str, settings: AgentSettings) -> Agent:
+    def update(self, agent_id: str, name: str, settings: ConversationSettings) -> Agent:
         result = self.client.patch(
             f"/v1/agents/{agent_id}",
-            {"name": name, "settings": settings.model_dump()},
+            {"name": name, "definition": settings.model_dump()},
         )
         return Agent(client=self.client, **result)
 
-    async def aupdate(self, agent_id: str, name: str, settings: AgentSettings) -> Agent:
+    async def aupdate(
+        self, agent_id: str, name: str, settings: ConversationSettings
+    ) -> Agent:
         result = await self.client.apatch(
             f"/v1/agents/{agent_id}",
-            {"name": name, "settings": settings.model_dump()},
+            {"name": name, "definition": settings.model_dump()},
         )
         return Agent(client=self.client, **result)
 

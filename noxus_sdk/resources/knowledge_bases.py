@@ -1,13 +1,12 @@
 import builtins
-import aiofiles
-
-from pydantic import BaseModel
-from typing import Literal, Any
-from typing import TypeAlias, TYPE_CHECKING
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
-from noxus_sdk.resources.runs import Run
+import aiofiles
+from pydantic import BaseModel
+
 from noxus_sdk.resources.base import BaseResource, BaseService
+from noxus_sdk.resources.runs import Run
 
 if TYPE_CHECKING:
     from noxus_sdk.client import HttpxFile
