@@ -24,16 +24,14 @@ class Run(BaseResource):
 
     def refresh(self) -> "Run":
         response = self.client.get(f"/v1/workflows/{self.workflow_id}/runs/{self.id}")
-        for key, value in response.items():
-            setattr(self, key, value)
+        self = Run(client=self.client, **response)
         return self
 
     async def arefresh(self) -> "Run":
         response = await self.client.aget(
             f"/v1/workflows/{self.workflow_id}/runs/{self.id}"
         )
-        for key, value in response.items():
-            setattr(self, key, value)
+        self = Run(client=self.client, **response)
         return self
 
     def wait(self, interval: int = 5, output_only: bool = False):

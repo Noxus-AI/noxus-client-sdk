@@ -21,7 +21,8 @@ class Agent(BaseResource):
             f"/v1/agents/{self.id}",
             {"name": name, "settings": settings},
         )
-        return Agent(client=self.client, **result)
+        self = Agent(client=self.client, **result)
+        return self
 
     def delete(self) -> None:
         self.client.delete(f"/v1/agents/{self.id}")
