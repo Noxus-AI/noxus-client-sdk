@@ -106,6 +106,7 @@ class ConfigDefinition(BaseModel):
 
 class NodeDefinition(BaseModel):
     type: str
+    title: str
     description: str
     integrations: list[str]
     inputs: list[dict]
@@ -173,6 +174,7 @@ class NodeOutput(BaseModel):
 class Node(BaseModel):
     type: str
     id: str
+    name: str = ""
     display: dict = {}
 
     node_config: dict = {}
@@ -251,6 +253,7 @@ class Node(BaseModel):
             "inputs": node_type.inputs,
             "outputs": node_type.outputs,
         }
+        self.name = node_type.title
         self.display = {"position": {"x": x, "y": y}}
         return self
 
