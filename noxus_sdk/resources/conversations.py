@@ -111,12 +111,12 @@ class Conversation(BaseResource):
     def refresh(self) -> "Conversation":
         response = self.client.get(f"/v1/conversations/{self.id}")
         self = Conversation(client=self.client, **response)
-        return self
+        return self  # noqa: RET504
 
     async def arefresh(self) -> "Conversation":
         response = await self.client.aget(f"/v1/conversations/{self.id}")
         self = Conversation(client=self.client, **response)
-        return self
+        return self  # noqa: RET504
 
     async def aget_messages(self) -> list[Message]:
         response = await self.arefresh()
@@ -186,10 +186,7 @@ class ConversationService(BaseService[Conversation]):
             params["assistant_id"] = agent_id
 
         # Match CreateConversation schema
-        req = {
-            "name": name,
-            "settings": settings.model_dump() if settings else None
-        }
+        req = {"name": name, "settings": settings.model_dump() if settings else None}
 
         result = self.client.post(
             "/v1/conversations",
@@ -214,10 +211,7 @@ class ConversationService(BaseService[Conversation]):
             params["assistant_id"] = agent_id
 
         # Match CreateConversation schema
-        req = {
-            "name": name,
-            "settings": settings.model_dump() if settings else None
-        }
+        req = {"name": name, "settings": settings.model_dump() if settings else None}
 
         result = await self.client.apost(
             "/v1/conversations",
