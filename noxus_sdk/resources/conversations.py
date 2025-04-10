@@ -1,4 +1,5 @@
 from uuid import UUID, uuid4
+from typing import Any
 from datetime import datetime
 from typing import Annotated, List, Literal
 from pydantic import BaseModel, Discriminator, Field
@@ -183,7 +184,7 @@ class ConversationService(BaseService[Conversation]):
             raise ValueError("Exactly one of settings or assistant_id must be provided")
 
         params = {}
-        body = {"name": name}
+        body: dict[str, Any] = {"name": name}
 
         if agent_id:
             params["assistant_id"] = agent_id
@@ -209,7 +210,7 @@ class ConversationService(BaseService[Conversation]):
             raise ValueError("Exactly one of settings or assistant_id must be provided")
 
         params = {}
-        body = {"name": name}
+        body: dict[str, Any] = {"name": name}
 
         if agent_id:
             params["assistant_id"] = agent_id

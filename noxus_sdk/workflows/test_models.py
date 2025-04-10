@@ -43,9 +43,9 @@ def test_full_workflow(client: Client):
     workflow.link(input.output(), ai.input("variables", "Input 1"))
     workflow.link(ai.output(), output.input())
 
-    with pytest.raises(KeyError) as exc:
+    with pytest.raises(KeyError) as exc2:
         output.output("FOOBAR")
-    with pytest.raises(KeyError) as exc:
+    with pytest.raises(KeyError) as exc3:
         output.input("FOOBAR")
 
     assert len(workflow.nodes) == 3

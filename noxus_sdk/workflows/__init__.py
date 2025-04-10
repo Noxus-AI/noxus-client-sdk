@@ -117,7 +117,7 @@ class NodeDefinition(BaseModel):
     config_endpoint: str | None
 
 
-NODE_TYPES = {}
+NODE_TYPES: dict[str, NodeDefinition] = {}
 
 
 def load_node_types(nodes_: list[dict]):

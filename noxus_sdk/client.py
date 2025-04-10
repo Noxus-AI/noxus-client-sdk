@@ -4,8 +4,6 @@ import httpx
 import time
 from typing import List, Any
 
-from regex import W
-
 
 class Requester:
     base_url = os.environ.get("NOXUS_BACKEND_URL", "https://backend.noxus.ai")
