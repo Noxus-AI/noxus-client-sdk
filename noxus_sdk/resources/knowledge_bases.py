@@ -113,7 +113,7 @@ class KnowledgeBaseDocument(BaseModel):
     prefix: str
     status: DocumentStatus
     size: int
-    source_type: str
+    source_type: str | None
     created_at: str
     updated_at: str
     error: dict | None = None
@@ -122,7 +122,8 @@ class KnowledgeBaseDocument(BaseModel):
 class CreateDocument(BaseModel):
     name: str
     prefix: str = "/"
-    source_type: str = "document"
+    status: str = "uploaded"
+    # source_type: str = "document"
 
 
 class UpdateDocument(BaseModel):

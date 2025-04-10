@@ -230,7 +230,10 @@ class ConversationService(BaseService[Conversation]):
         return Conversation(client=self.client, **result)
 
     def update(
-        self, conversation_id: str, name: str | None = None, settings: ConversationSettings | None = None
+        self,
+        conversation_id: str,
+        name: str | None = None,
+        settings: ConversationSettings | None = None,
     ) -> Conversation:
         result = self.client.patch(
             f"/v1/conversations/{conversation_id}",
@@ -239,7 +242,10 @@ class ConversationService(BaseService[Conversation]):
         return Conversation(client=self.client, **result)
 
     async def aupdate(
-        self, conversation_id: str, name: str | None = None, settings: ConversationSettings | None = None
+        self,
+        conversation_id: str,
+        name: str | None = None,
+        settings: ConversationSettings | None = None,
     ) -> Conversation:
         result = await self.client.apatch(
             f"/v1/conversations/{conversation_id}",
