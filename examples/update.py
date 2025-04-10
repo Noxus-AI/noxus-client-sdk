@@ -35,17 +35,16 @@ assert "test2" in data
 
 # Step 2 update  it
 workflow = [w for w in client.workflows.list() if w.name == "CombineText Testing"][0]
-definition: WorkflowDefinition = workflow.to_builder()
 
-input3 = definition.node("InputNode")
-compose = [w for w in definition.nodes if w.type == "ComposeTextNode"][0]
+input3 = workflow.node("InputNode")
+compose = [w for w in workflow.nodes if w.type == "ComposeTextNode"][0]
 compose.config(
     template="((Input 1))\n\n((Input 2))\n\n((Input 3))",
 )
-definition.link(input3.output("output"), compose.input("variables", "Input 3"))
+workflow.link(input3.output("output"), compose.input("variables", "Input 3"))
 
 # Step 3 save the updated workflow
-updated_workflow = client.workflows.update(workflow.id, definition)
+updated_workflow = client.workflows.update(workflow.id, workflow)
 run = updated_workflow.run(
     body={
         input_node1.inputs[0].id: "test1",

@@ -1,8 +1,8 @@
 import time
 import asyncio
 
-from typing import List
 from noxus_sdk.resources.base import BaseResource, BaseService
+import builtins
 
 
 class RunFailure(Exception):
@@ -46,8 +46,7 @@ class Run(BaseResource):
 
         if output_only:
             return self.output
-        else:
-            return self
+        return self
 
     async def a_wait(self, interval: int = 5, output_only: bool = False):
         while self.status not in ["failed", "completed"]:
@@ -59,8 +58,7 @@ class Run(BaseResource):
 
         if output_only:
             return self.output
-        else:
-            return self
+        return self
 
     def get_status(self):
         return self.status
@@ -75,7 +73,7 @@ class RunService(BaseService[Run]):
         response = await self.client.aget(f"/v1/workflows/{workflow_id}/run/{run_id}")
         return Run(client=self.client, **response)
 
-    def list(self, workflow_id: str, page: int = 1, page_size: int = 10) -> List[Run]:
+    def list(self, workflow_id: str, page: int = 1, page_size: int = 10) -> list[Run]:
         response = self.client.pget(
             f"/v1/workflows/{workflow_id}/runs",
             params={"page": page, "page_size": page_size},
@@ -84,7 +82,7 @@ class RunService(BaseService[Run]):
 
     async def alist(
         self, workflow_id: str, page: int = 1, page_size: int = 10
-    ) -> List[Run]:
+    ) -> builtins.list[Run]:
         response = await self.client.apget(
             f"/v1/workflows/{workflow_id}/runs",
             params={"page": page, "page_size": page_size},

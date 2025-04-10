@@ -1,13 +1,14 @@
-import json
 import io
+import builtins
 
 from pydantic import BaseModel
 from typing import List, Literal, Optional, Any, Union
-from noxus_sdk.resources.base import BaseResource, BaseService
-from noxus_sdk.resources.runs import Run
 from typing_extensions import TypeAlias
 from pathlib import Path
+
 from noxus_sdk.client import HttpxFile
+from noxus_sdk.resources.runs import Run
+from noxus_sdk.resources.base import BaseResource, BaseService
 
 
 RunStatus = Literal["queued", "running", "failed", "completed", "stopped"]
@@ -320,7 +321,9 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
             for knowledge_base in knowledge_bases
         ]
 
-    async def alist(self, page: int = 1, page_size: int = 10) -> List[KnowledgeBase]:
+    async def alist(
+        self, page: int = 1, page_size: int = 10
+    ) -> builtins.list[KnowledgeBase]:
         knowledge_bases = await self.client.apget(
             "/v1/knowledge-bases", params={"page": page, "page_size": page_size}
         )
@@ -343,7 +346,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         self,
         name: str,
         description: str,
-        document_types: List[str],
+        document_types: builtins.list[str],
         settings_: KnowledgeBaseSettings,
     ) -> KnowledgeBase:
         knowledge_base = self.client.post(
@@ -362,7 +365,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         self,
         name: str,
         description: str,
-        document_types: List[str],
+        document_types: builtins.list[str],
         settings_: KnowledgeBaseSettings,
     ) -> KnowledgeBase:
         knowledge_base = await self.client.apost(

@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List
 from noxus_sdk.resources.base import BaseResource, BaseService
 from noxus_sdk.resources.conversations import AnyToolSettings
 
@@ -29,12 +28,12 @@ class Agent(BaseResource):
 
 
 class AgentService(BaseService[Agent]):
-    def list(self) -> List[Agent]:
-        results = self.client.pget("/v1/agents")
+    async def alist(self) -> list[Agent]:
+        results = await self.client.apget("/v1/agents")
         return [Agent(client=self.client, **result) for result in results]
 
-    async def alist(self) -> List[Agent]:
-        results = await self.client.apget("/v1/agents")
+    def list(self) -> list[Agent]:
+        results = self.client.pget("/v1/agents")
         return [Agent(client=self.client, **result) for result in results]
 
     def create(self, name: str, settings: AgentSettings) -> Agent:

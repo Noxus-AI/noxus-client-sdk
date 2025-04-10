@@ -1,6 +1,7 @@
 from uuid import UUID, uuid4
+from typing import Any
 from datetime import datetime
-from typing import Annotated, List, Literal
+from typing import Annotated, Literal
 from pydantic import BaseModel, Discriminator, Field
 
 from noxus_sdk.resources.base import BaseResource, BaseService
@@ -153,8 +154,8 @@ class Conversation(BaseResource):
 
 
 class ConversationService(BaseService[Conversation]):
-    def list(self, page: int = 1, page_size: int = 10) -> list[Conversation]:
-        conversations = self.client.pget(
+    async def alist(self, page: int = 1, page_size: int = 10) -> list[Conversation]:
+        conversations = await self.client.apget(
             "/v1/conversations", params={"page": page, "page_size": page_size}
         )
         return [
@@ -162,8 +163,8 @@ class ConversationService(BaseService[Conversation]):
             for conversation in conversations
         ]
 
-    async def alist(self, page: int = 1, page_size: int = 10) -> List[Conversation]:
-        conversations = await self.client.apget(
+    def list(self, page: int = 1, page_size: int = 10) -> list[Conversation]:
+        conversations = self.client.pget(
             "/v1/conversations", params={"page": page, "page_size": page_size}
         )
         return [
@@ -183,7 +184,7 @@ class ConversationService(BaseService[Conversation]):
             raise ValueError("Exactly one of settings or assistant_id must be provided")
 
         params = {}
-        body = {"name": name}
+        body: dict[str, Any] = {"name": name}
 
         if agent_id:
             params["assistant_id"] = agent_id
@@ -209,7 +210,7 @@ class ConversationService(BaseService[Conversation]):
             raise ValueError("Exactly one of settings or assistant_id must be provided")
 
         params = {}
-        body = {"name": name}
+        body: dict[str, Any] = {"name": name}
 
         if agent_id:
             params["assistant_id"] = agent_id

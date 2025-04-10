@@ -1,11 +1,13 @@
-import os
 import enum
 import uuid
 from typing import Any, TYPE_CHECKING
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel, Field, TypeAdapter, model_validator
+from pydantic.config import ConfigDict
+
+from noxus_sdk.client import Client
 
 if TYPE_CHECKING:
-    from noxus_sdk.client import Client
+    from noxus_sdk.resources.runs import Run
 
 
 class ConfigError(Exception):
@@ -117,12 +119,14 @@ class NodeDefinition(BaseModel):
     config_endpoint: str | None
 
 
-NODE_TYPES = {}
+NODE_TYPES: dict[str, NodeDefinition] = {}
 
 
 def load_node_types(nodes_: list[dict]):
     NODE_TYPES.clear()
-    nodes = TypeAdapter(list[NodeDefinition]).validate_python(nodes_)
+    nodes: list[NodeDefinition] = TypeAdapter(list[NodeDefinition]).validate_python(
+        nodes_
+    )
     for node in nodes:
         NODE_TYPES[node.type] = node
 
@@ -152,7 +156,7 @@ class NodeInput(BaseModel):
 class EdgePoint(BaseModel):
     node_id: str
     connector_name: str
-    key: str | None
+    key: str | None = None
     optional: bool = False
 
 
@@ -263,7 +267,7 @@ class Node(BaseModel):
         for key, value in kwargs.items():
             if key not in self.config_definition:
                 raise ConfigError(
-                    f"Invalid config key: {key} (possible: {list([k for k,v in self.config_definition.items() if v.visible])})"
+                    f"Invalid config key: {key} (possible: {[k for k,v in self.config_definition.items() if v.visible]})"
                 )
             self.config_definition[key].check_value(key, value)
             self.node_config[key] = value
@@ -272,19 +276,33 @@ class Node(BaseModel):
                 v.check_value(k, None)
         return self
 
+    @model_validator(mode="after")
+    def call_create_after_validate(self):
+        old_display = dict(self.display)
+        self.create(0, 0)
+        if old_display:
+            self.display = old_display
+        return self
+
 
 class WorkflowDefinition(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    client: Client | None = Field(default=None, exclude=True)
+    id: str = ""
+    group_id: str | None = Field(default=None, exclude=True)
     name: str = "Untitled Workflow"
     type: str = "flow"
     nodes: list["Node"] = []
     edges: list["Edge"] = []
     x: int = 0
 
-    def update_workflow(self, workflow_id: str, client: "Client", force: bool = False):
-        return client.workflows.update(workflow_id, self, force)
-
-    def save(self, client: "Client"):
-        return client.workflows.save(self)
+    @model_validator(mode="before")
+    @classmethod
+    def foo(cls, values):
+        if "definition" in values:
+            values["nodes"] = values["definition"]["nodes"]
+            values["edges"] = values["definition"]["edges"]
+        return values
 
     def to_noxus(self) -> dict:
         return {
@@ -296,9 +314,77 @@ class WorkflowDefinition(BaseModel):
             },
         }
 
+    def refresh_from_data(self, **data):
+        n = self.__class__.model_validate(data)
+        for k in n.model_fields_set:
+            v = getattr(n, k)
+            setattr(self, k, v)
+        return self
+
+    def refresh(self) -> "WorkflowDefinition":
+        if not self.client:
+            raise ValueError("Client not set")
+        response = self.client.get(f"/v1/workflows/{self.id}")
+        self.refresh_from_data(client=self.client, **response)
+        return self
+
+    async def arefresh(self) -> "WorkflowDefinition":
+        if not self.client:
+            raise ValueError("Client not set")
+        response = await self.client.aget(f"/v1/workflows/{self.id}")
+        self.refresh_from_data(client=self.client, **response)
+        return self
+
+    def run(self, body: dict[str, Any]) -> "Run":
+        from noxus_sdk.resources.runs import Run
+
+        if not self.client:
+            raise ValueError("Client not set")
+        response = self.client.post(f"/v1/workflows/{self.id}/runs", {"input": body})
+        return Run(client=self.client, **response)
+
+    async def arun(self, body: dict[str, Any]) -> "Run":
+        if not self.client:
+            raise ValueError("Client not set")
+        from noxus_sdk.resources.runs import Run
+
+        response = await self.client.apost(
+            f"/v1/workflows/{self.id}/runs", {"input": body}
+        )
+        return Run(client=self.client, **response)
+
+    def update(self, force: bool = False):
+        if not self.client:
+            raise ValueError("Client not set")
+        w = self.client.workflows.update(self.id, self, force)
+        self.refresh_from_data(client=self.client, **w.model_dump())
+        return w
+
+    async def aupdate(self, force: bool = False):
+        if not self.client:
+            raise ValueError("Client not set")
+        w = await self.client.workflows.aupdate(self.id, self, force)
+        self.refresh_from_data(client=self.client, **w.model_dump())
+        return w
+
+    def save(self):
+        if not self.client:
+            raise ValueError("Client not set")
+        w = self.client.workflows.save(self)
+        self.refresh_from_data(client=self.client, **w.model_dump())
+        return w
+
+    async def asave(self):
+        if not self.client:
+            raise ValueError("Client not set")
+        w = await self.client.workflows.asave(self)
+        self.refresh_from_data(client=self.client, **w.model_dump())
+        return w
+
     def node(self, name) -> "Node":
         self.x += 350
-        n = Node(id=str(uuid.uuid4()), type=name).create(x=self.x, y=0)
+        n = Node(id=str(uuid.uuid4()), type=name)
+        n.create(x=self.x, y=0)
         self.nodes.append(n)
         return n
 
