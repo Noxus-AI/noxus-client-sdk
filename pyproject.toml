@@ -33,10 +33,35 @@ dev = [
     "psutil>=7.0.0"
 ]
 
+[tool.ruff]
+line-length = 88
 
 [tool.ruff.lint]
-ignore = ["F401", "F541", "E722", "F841", "E402", "F811", "F403", "E741", "E401", "E731"]
+ignore = [
+    "A",
+    "B",
+    "BLE001",
+    "E401", "E402", "E722", "E731", "E741",
+    "EM",
+    "F401", "F541", "F403", "F811", "F841",
+    "FBT",
+    "I",
+    "INP",
+    "N818",
+    "PT",
+    "PLR",
+    "PYI051",
+    "RUF012", "RUF015",
+    "S",
+    "TID252",
+    "TRY",
+    "UP038",
+]
 exclude = []
+
+[tool.ruff.lint.per-file-ignores]
+"examples/**" = ["T201"]
+
 
 [tool.hatch.envs.test]
 python = "3.10"

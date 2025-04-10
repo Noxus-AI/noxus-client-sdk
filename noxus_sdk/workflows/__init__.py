@@ -267,7 +267,7 @@ class Node(BaseModel):
         for key, value in kwargs.items():
             if key not in self.config_definition:
                 raise ConfigError(
-                    f"Invalid config key: {key} (possible: {list([k for k,v in self.config_definition.items() if v.visible])})"
+                    f"Invalid config key: {key} (possible: {[k for k,v in self.config_definition.items() if v.visible]})"
                 )
             self.config_definition[key].check_value(key, value)
             self.node_config[key] = value

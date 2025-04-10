@@ -2,7 +2,7 @@ import os
 import anyio
 import httpx
 import time
-from typing import List, Any
+from typing import Any
 
 
 class Requester:
@@ -226,20 +226,20 @@ class Client(Requester):
         self.knowledge_bases = KnowledgeBaseService(self)
         self.runs = RunService(self)
 
-    def get_nodes(self) -> List[dict]:
+    def get_nodes(self) -> list[dict]:
         return self.get("/v1/nodes")
 
-    async def aget_nodes(self) -> List[dict]:
+    async def aget_nodes(self) -> list[dict]:
         return await self.aget("/v1/nodes")
 
-    def get_models(self) -> List[dict]:
+    def get_models(self) -> list[dict]:
         return self.get("/v1/models/llms")
 
-    async def aget_models(self) -> List[dict]:
+    async def aget_models(self) -> list[dict]:
         return await self.aget("/v1/models/llms")
 
-    def get_chat_presets(self) -> List[dict]:
+    def get_chat_presets(self) -> list[dict]:
         return self.get("/v1/models/llms/presets")
 
-    async def aget_chat_presets(self) -> List[dict]:
+    async def aget_chat_presets(self) -> list[dict]:
         return await self.aget("/v1/models/llms/presets")
