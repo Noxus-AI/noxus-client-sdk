@@ -3,12 +3,14 @@ import builtins
 
 from pydantic import BaseModel
 from typing import List, Literal, Optional, Any, Union
-from typing import TypeAlias
+from typing import TypeAlias, TYPE_CHECKING
 from pathlib import Path
 
-from noxus_sdk.client import HttpxFile
 from noxus_sdk.resources.runs import Run
 from noxus_sdk.resources.base import BaseResource, BaseService
+
+if TYPE_CHECKING:
+    from noxus_sdk.client import HttpxFile
 
 
 RunStatus = Literal["queued", "running", "failed", "completed", "stopped"]
@@ -231,12 +233,11 @@ class KnowledgeBase(BaseResource):
             for file in files
         ]
 
-        response = self.client.post(
+        return self.client.post(
             f"/v1/knowledge-bases/{self.id}/upload_train",
             files=files_list,
             params={"prefix": prefix},
         )
-        return response
 
     async def aupload_document(
         self, files: list[str | Path], prefix: str = "/"
@@ -246,12 +247,11 @@ class KnowledgeBase(BaseResource):
             for file in files
         ]
 
-        response = await self.client.apost(
+        return await self.client.apost(
             f"/v1/knowledge-bases/{self.id}/upload_train",
             files=files_list,
             params={"prefix": prefix},
         )
-        return response
 
     def update_document(
         self, document_id: str, update: UpdateDocument
@@ -294,7 +294,6 @@ class KnowledgeBase(BaseResource):
             f"/v1/knowledge-bases/{self.id}/documents/{status if status else ''}",
             params=params,
         )
-        print(response)
         return [KnowledgeBaseDocument(**doc) for doc in response["items"]]
 
     async def alist_documents(
@@ -488,7 +487,6 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
             f"/v1/knowledge-bases/{knowledge_base_id}/documents/{status if status else ''}",
             params=params,
         )
-        print(response)
         return [KnowledgeBaseDocument(**doc) for doc in response]
 
     async def alist_documents(
@@ -529,22 +527,20 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
     def train_document(
         self, knowledge_base_id: str, source: Source, prefix: str = "/"
     ) -> builtins.list[RunID]:
-        response = self.client.post(
+        return self.client.post(
             f"/v1/knowledge-bases/{knowledge_base_id}/generic_train",
             body=source.model_dump(),
             params={"prefix": prefix},
         )
-        return response
 
     async def atrain_document(
         self, knowledge_base_id: str, source: Source, prefix: str = "/"
     ) -> builtins.list[RunID]:
-        response = await self.client.apost(
+        return await self.client.apost(
             f"/v1/knowledge-bases/{knowledge_base_id}/generic_train",
             body=source.model_dump(),
             params={"prefix": prefix},
         )
-        return response
 
     def upload_document(
         self, knowledge_base_id: str, files: builtins.list[str | Path], prefix: str = "/"
@@ -554,12 +550,11 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
             for file in files
         ]
 
-        response = self.client.post(
+        return self.client.post(
             f"/v1/knowledge-bases/{knowledge_base_id}/upload_train",
             files=files_list,
             params={"prefix": prefix},
         )
-        return response
 
     async def aupload_document(
         self, knowledge_base_id: str, files: builtins.list[str | Path], prefix: str = "/"
@@ -569,9 +564,8 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
             for file in files
         ]
 
-        response = await self.client.apost(
+        return await self.client.apost(
             f"/v1/knowledge-bases/{knowledge_base_id}/upload_train",
             files=files_list,
             params={"prefix": prefix},
         )
-        return response
