@@ -108,7 +108,6 @@ async def test_conversation_with_file(client, conversation_settings):
 
 
 @pytest.mark.anyio
-@pytest.mark.skip(reason="Not implemented")
 async def test_update_conversation(client, conversation_settings):
     conversation = await client.conversations.acreate(
         name="Original Name", settings=conversation_settings

@@ -229,23 +229,23 @@ class ConversationService(BaseService[Conversation]):
         result = await self.client.aget(f"/v1/conversations/{conversation_id}")
         return Conversation(client=self.client, **result)
 
-    # def update(
-    #     self, conversation_id: str, name: str, settings: ConversationSettings
-    # ) -> Conversation:
-    #     result = self.client.patch(
-    #         f"/v1/conversations/{conversation_id}",
-    #         {"name": name, "settings": settings.model_dump()},
-    #     )
-    #     return Conversation(client=self.client, **result)
+    def update(
+        self, conversation_id: str, name: str | None = None, settings: ConversationSettings | None = None
+    ) -> Conversation:
+        result = self.client.patch(
+            f"/v1/conversations/{conversation_id}",
+            {"name": name, "settings": settings.model_dump() if settings else None},
+        )
+        return Conversation(client=self.client, **result)
 
-    # async def aupdate(
-    #     self, conversation_id: str, name: str, settings: ConversationSettings
-    # ) -> Conversation:
-    #     result = await self.client.apatch(
-    #         f"/v1/conversations/{conversation_id}",
-    #         {"name": name, "settings": settings.model_dump()},
-    #     )
-    #     return Conversation(client=self.client, **result)
+    async def aupdate(
+        self, conversation_id: str, name: str | None = None, settings: ConversationSettings | None = None
+    ) -> Conversation:
+        result = await self.client.apatch(
+            f"/v1/conversations/{conversation_id}",
+            {"name": name, "settings": settings.model_dump() if settings else None},
+        )
+        return Conversation(client=self.client, **result)
 
     def delete(self, conversation_id: str) -> None:
         self.client.delete(f"/v1/conversations/{conversation_id}")
