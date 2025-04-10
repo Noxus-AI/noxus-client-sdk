@@ -308,7 +308,7 @@ class KnowledgeBase(BaseResource):
             f"/v1/knowledge-bases/{self.id}/documents/{status if status else ''}",
             params=params,
         )
-        return [KnowledgeBaseDocument(**doc) for doc in response]
+        return [KnowledgeBaseDocument(**doc) for doc in response["items"]]
 
 
 class KnowledgeBaseService(BaseService[KnowledgeBase]):
