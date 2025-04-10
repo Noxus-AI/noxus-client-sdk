@@ -10,7 +10,8 @@ from noxus_sdk.resources.conversations import (
     WorkflowTool,
     ConversationFile,
 )
-from noxus_sdk.resources.assistants import AgentSettings
+from noxus_sdk.resources.assistants import ConversationSettings
+from noxus_sdk.resources.conversations import WorkflowInfo
 from noxus_sdk.resources.workflows import (
     WorkflowDefinition,
 )
@@ -23,7 +24,7 @@ from noxus_sdk.resources.knowledge_bases import (
 
 @pytest.fixture
 def agent_settings():
-    return AgentSettings(
+    return ConversationSettings(
         model_selection=["gpt-4o"],
         temperature=0.7,
         tools=[WebResearchTool(), NoxusQaTool()],
@@ -116,10 +117,10 @@ async def test_update_agent(client, agent_settings):
 
     try:
         # Update settings with real workflow ID
-        new_settings = AgentSettings(
+        new_settings = ConversationSettings(
             model_selection=["gpt-4o"],
             temperature=0.5,
-            tools=[WorkflowTool(workflow_id=created_workflow.id)],
+            tools=[WorkflowTool(workflow=WorkflowInfo(id=created_workflow.id, name=created_workflow.name))],
             max_tokens=200,
             extra_instructions="Updated instructions",
         )
@@ -139,7 +140,7 @@ async def test_update_agent(client, agent_settings):
 
         # Test instance update method with real KB
         instance_updated = await client.agents.aget(agent.id)
-        instance_settings = AgentSettings(
+        instance_settings = ConversationSettings(
             model_selection=["gpt-4o"],
             temperature=0.8,
             tools=[KnowledgeBaseSelectorTool()],
@@ -228,14 +229,14 @@ async def test_agent_with_all_tool_types(client):
     )
 
     # Create an agent with all tool types and real IDs
-    settings = AgentSettings(
+    settings = ConversationSettings(
         model_selection=["gpt-4"],
         temperature=0.7,
         tools=[
             WebResearchTool(),
             NoxusQaTool(),
             KnowledgeBaseSelectorTool(),
-            WorkflowTool(workflow_id=created_workflow.id),
+            WorkflowTool(workflow=WorkflowInfo(id=created_workflow.id, name=created_workflow.name)),
         ],
         max_tokens=150,
     )
@@ -298,7 +299,7 @@ def test_synchronous_agent_operations(client, agent_settings):
         assert any(a.id == agent.id for a in agents)
 
         # Test synchronous update
-        updated_settings = AgentSettings(
+        updated_settings = ConversationSettings(
             model_selection=["gpt-4"],
             temperature=0.5,
             tools=[NoxusQaTool()],
