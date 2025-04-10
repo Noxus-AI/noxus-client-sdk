@@ -18,6 +18,7 @@ class Link(BaseModel):
 class Edge(BaseModel):
     from_id: Link
     to_id: Link
+    id: str | None = None
 
 
 class Variables(BaseModel):

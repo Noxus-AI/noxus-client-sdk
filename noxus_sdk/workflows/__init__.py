@@ -159,6 +159,7 @@ class EdgePoint(BaseModel):
 class Edge(BaseModel):
     from_id: EdgePoint
     to_id: EdgePoint
+    id: str | None = None
 
 
 class NodeOutput(BaseModel):
@@ -302,7 +303,7 @@ class WorkflowDefinition(BaseModel):
         return n
 
     def link(self, from_node: EdgePoint, to_node: EdgePoint) -> "Edge":
-        e = Edge(from_id=from_node, to_id=to_node)
+        e = Edge(id=str(uuid.uuid4()), from_id=from_node, to_id=to_node)
         self.edges.append(e)
         return e
 
