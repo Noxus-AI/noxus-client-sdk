@@ -16,7 +16,7 @@ def client(api_key: str):
 
 @pytest.mark.test
 def test_generate_text(client: Client):
-    workflow = WorkflowDefinition()
+    workflow = WorkflowDefinition(client=client, id="123")
     n = workflow.node("TextGenerationNode")
     with pytest.raises(ConfigError) as exc:
         n.config(foo="bar")
@@ -31,7 +31,7 @@ def test_generate_text(client: Client):
 
 
 def test_full_workflow(client: Client):
-    workflow = WorkflowDefinition()
+    workflow = WorkflowDefinition(client=client, id="123")
     input = workflow.node("InputNode")
     ai = workflow.node("TextGenerationNode").config(
         template="Write a poem about ((Input 1))"
@@ -53,7 +53,7 @@ def test_full_workflow(client: Client):
 
 
 def test_full_workflow_link_many(client: Client):
-    workflow = WorkflowDefinition()
+    workflow = WorkflowDefinition(client=client, id="123")
     input = workflow.node("InputNode")
     ai = workflow.node("TextGenerationNode").config(
         template="Write a poem about ((Input 1))"
