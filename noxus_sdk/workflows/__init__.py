@@ -249,10 +249,11 @@ class Node(BaseModel):
             NodeOutput(node_id=str(self.id), name=output["name"], type=output["type"])
             for output in node_type.outputs
         ]
-        self.connector_config = {
-            "inputs": node_type.inputs,
-            "outputs": node_type.outputs,
-        }
+        if not self.connector_config:
+            self.connector_config = {
+                "inputs": node_type.inputs,
+                "outputs": node_type.outputs,
+            }
         self.name = node_type.title
         self.display = {"position": {"x": x, "y": y}}
         return self
