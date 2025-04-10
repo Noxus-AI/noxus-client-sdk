@@ -129,6 +129,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
                 "description": description,
                 "document_types": document_types,
                 "settings_": settings_.model_dump(),
+                "kb_type": "entity",
             },
         )
 

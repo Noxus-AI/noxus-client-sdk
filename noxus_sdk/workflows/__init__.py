@@ -106,6 +106,7 @@ class ConfigDefinition(BaseModel):
 
 class NodeDefinition(BaseModel):
     type: str
+    title: str
     description: str
     integrations: list[str]
     inputs: list[dict]
@@ -158,6 +159,7 @@ class EdgePoint(BaseModel):
 class Edge(BaseModel):
     from_id: EdgePoint
     to_id: EdgePoint
+    id: str | None = None
 
 
 class NodeOutput(BaseModel):
@@ -173,6 +175,7 @@ class NodeOutput(BaseModel):
 class Node(BaseModel):
     type: str
     id: str
+    name: str = ""
     display: dict = {}
 
     node_config: dict = {}
@@ -247,10 +250,12 @@ class Node(BaseModel):
             NodeOutput(node_id=str(self.id), name=output["name"], type=output["type"])
             for output in node_type.outputs
         ]
-        self.connector_config = {
-            "inputs": node_type.inputs,
-            "outputs": node_type.outputs,
-        }
+        if not self.connector_config:
+            self.connector_config = {
+                "inputs": node_type.inputs,
+                "outputs": node_type.outputs,
+            }
+        self.name = node_type.title
         self.display = {"position": {"x": x, "y": y}}
         return self
 
@@ -298,7 +303,7 @@ class WorkflowDefinition(BaseModel):
         return n
 
     def link(self, from_node: EdgePoint, to_node: EdgePoint) -> "Edge":
-        e = Edge(from_id=from_node, to_id=to_node)
+        e = Edge(id=str(uuid.uuid4()), from_id=from_node, to_id=to_node)
         self.edges.append(e)
         return e
 

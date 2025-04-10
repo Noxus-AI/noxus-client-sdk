@@ -1,9 +1,12 @@
-from typing import List, Optional, Any
+from typing import List, Optional, Any, TYPE_CHECKING
 from pydantic import BaseModel
 
 from noxus_sdk.resources.base import BaseResource, BaseService
 from noxus_sdk.resources.runs import Run
 from noxus_sdk.workflows import WorkflowDefinition
+
+if TYPE_CHECKING:
+    from noxus_sdk.workflows import WorkflowDefinition
 
 
 class Link(BaseModel):
@@ -15,6 +18,7 @@ class Link(BaseModel):
 class Edge(BaseModel):
     from_id: Link
     to_id: Link
+    id: str | None = None
 
 
 class Variables(BaseModel):
@@ -26,6 +30,7 @@ class Node(BaseModel):
     type: str
     node_config: dict
     connector_config: dict
+    display: dict
 
 
 class Definition(BaseModel):
@@ -49,6 +54,30 @@ class Workflow(BaseResource):
 
     def validate_body(self, body: dict[str, Any]):
         return True
+
+    def to_builder(self) -> "WorkflowDefinition":
+        from noxus_sdk.workflows import Node, Edge, WorkflowDefinition
+
+        nodes = [Node.model_validate(n.model_dump()) for n in self.definition.nodes]
+        x = 0
+        for node in nodes:
+            old_display = dict(node.display)
+            node.create(x, 0)
+            x += 350
+            if old_display:
+                node.display = old_display
+
+        w = WorkflowDefinition.model_validate(
+            dict(
+                name=self.name,
+                type=self.type,
+                nodes=nodes,
+                edges=[
+                    Edge.model_validate(e.model_dump()) for e in self.definition.edges
+                ],
+            )
+        )
+        return w
 
     @property
     def inputs(self):
@@ -104,6 +133,10 @@ class WorkflowService(BaseService[Workflow]):
 
     def get(self, workflow_id: str) -> "Workflow":
         w = self.client.get(f"/v1/workflows/{workflow_id}")
+        return Workflow(client=self.client, **w)
+
+    async def aget(self, workflow_id: str) -> "Workflow":
+        w = await self.client.aget(f"/v1/workflows/{workflow_id}")
         return Workflow(client=self.client, **w)
 
     def update(

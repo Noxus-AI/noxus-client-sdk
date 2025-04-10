@@ -31,7 +31,7 @@ class Requester:
         async with httpx.AsyncClient() as client:
             response = await client.request(
                 method,
-                f"{self.base_url}/{url}",
+                f"{self.base_url}{url}",
                 headers=headers_,
                 follow_redirects=True,
                 json=json,
