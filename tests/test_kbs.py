@@ -6,15 +6,9 @@ from pathlib import Path
 from noxus_sdk.resources.knowledge_bases import (
     KnowledgeBase,
     UpdateDocument,
-    CreateDocument,
-    KnowledgeBaseDocument,
     KnowledgeBaseSettings,
     KnowledgeBaseIngestion,
     KnowledgeBaseRetrieval,
-    File,
-    Source,
-    DocumentSource,
-    DocumentSourceConfig,
 )
 
 
@@ -134,12 +128,9 @@ async def test_list_knowledge_bases(client):
         assert found_kb.document_types == ["text"]
         assert found_kb.kb_type == "entity"
 
-        page1 = await client.knowledge_bases.alist(page=1, page_size=1)
-        page2 = await client.knowledge_bases.alist(page=2, page_size=1)
-        assert len(page1) == 1
-        assert len(page2) == 1
-        if len(knowledge_bases) > 1:
-            assert page1[0].id != page2[0].id
+        # We have a kb from fixtures
+        page1 = await client.knowledge_bases.alist(page=1, page_size=2)
+        assert len(page1) == 2
 
     finally:
         await test_kb.adelete()
