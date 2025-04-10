@@ -179,19 +179,21 @@ class ConversationService(BaseService[Conversation]):
         if (settings is None and agent_id is None) or (
             settings is not None and agent_id is not None
         ):
-            raise ValueError("Exactly one of settings or assistant_id must be provided")
+            raise ValueError("Exactly one of settings or agent_id must be provided")
 
         params = {}
-        body: dict[str, Any] = {"name": name}
-
         if agent_id:
             params["assistant_id"] = agent_id
-        if settings:
-            body["settings"] = settings.model_dump()
+
+        # Match CreateConversation schema
+        req = {
+            "name": name,
+            "settings": settings.model_dump() if settings else None
+        }
 
         result = self.client.post(
             "/v1/conversations",
-            body,
+            body=req,
             params=params,
         )
         return Conversation(client=self.client, **result)
@@ -205,19 +207,21 @@ class ConversationService(BaseService[Conversation]):
         if (settings is None and agent_id is None) or (
             settings is not None and agent_id is not None
         ):
-            raise ValueError("Exactly one of settings or assistant_id must be provided")
+            raise ValueError("Exactly one of settings or agent_id must be provided")
 
         params = {}
-        body: dict[str, Any] = {"name": name}
-
         if agent_id:
             params["assistant_id"] = agent_id
-        if settings:
-            body["settings"] = settings.model_dump()
+
+        # Match CreateConversation schema
+        req = {
+            "name": name,
+            "settings": settings.model_dump() if settings else None
+        }
 
         result = await self.client.apost(
             "/v1/conversations",
-            body,
+            body=req,
             params=params,
         )
         return Conversation(client=self.client, **result)
