@@ -1,6 +1,7 @@
 import os
-import httpx
 from typing import Any, BinaryIO
+
+import httpx
 
 FileContent = BinaryIO | bytes | str
 HttpxFile = tuple[str, tuple[str, FileContent, str | None]]
@@ -223,12 +224,12 @@ class Client(Requester):
         load_nodes: bool = True,
         extra_headers: dict | None = None,
     ):
-        from noxus_sdk.workflows import load_node_types
-        from noxus_sdk.resources.workflows import WorkflowService
         from noxus_sdk.resources.assistants import AgentService
         from noxus_sdk.resources.conversations import ConversationService
         from noxus_sdk.resources.knowledge_bases import KnowledgeBaseService
         from noxus_sdk.resources.runs import RunService
+        from noxus_sdk.resources.workflows import WorkflowService
+        from noxus_sdk.workflows import load_node_types
 
         self.api_key = api_key
         self.base_url = os.environ.get("NOXUS_BACKEND_URL", base_url)

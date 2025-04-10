@@ -1,10 +1,11 @@
-import pytest
 import os
+
+import pytest
 from noxus_sdk.client import Client
 from noxus_sdk.resources.knowledge_bases import (
-    KnowledgeBaseSettings,
     KnowledgeBaseIngestion,
     KnowledgeBaseRetrieval,
+    KnowledgeBaseSettings,
 )
 
 

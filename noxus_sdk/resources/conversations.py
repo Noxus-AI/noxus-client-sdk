@@ -1,7 +1,7 @@
-from uuid import UUID, uuid4
-from typing import Any
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Discriminator, Field
 
 from noxus_sdk.resources.base import BaseResource, BaseService
@@ -49,13 +49,19 @@ class KnowledgeBaseQaTool(ConversationTool):
     kb_id: str | None = None
 
 
+class WorkflowInfo(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+
+
 class WorkflowTool(ConversationTool):
     """Tool that allows the user to run a workflow"""
 
     type: Literal["workflow"] = "workflow"
     name: str = "Workflow Runner"
     description: str = "Run a workflow"
-    workflow_id: str | dict | None = None
+    workflow: WorkflowInfo
 
 
 AnyToolSettings = Annotated[

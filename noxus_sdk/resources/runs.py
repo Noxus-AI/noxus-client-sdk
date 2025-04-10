@@ -1,8 +1,8 @@
-import time
 import asyncio
+import builtins
+import time
 
 from noxus_sdk.resources.base import BaseResource, BaseService
-import builtins
 
 
 class RunFailure(Exception):
