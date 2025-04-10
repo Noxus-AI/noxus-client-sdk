@@ -9,6 +9,11 @@ from noxus_sdk.resources.knowledge_bases import (
 
 
 @pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest.fixture
 def api_key():
     return os.environ.get("NOXUS_API_KEY", "")
 
