@@ -20,7 +20,9 @@ def api_key():
 
 @pytest.fixture
 def client(api_key: str):
-    return Client(api_key)
+    return Client(
+        api_key, base_url=os.environ.get("NOXUS_BASE_URL", "https://backend.noxus.ai")
+    )
 
 
 @pytest.fixture

@@ -58,7 +58,7 @@ ignore = [
     "TRY",
     "UP038",
 ]
-exclude = []
+exclude = ["tests/**"]
 
 [tool.ruff.lint.per-file-ignores]
 "examples/**" = ["T201"]
@@ -66,10 +66,14 @@ exclude = []
 
 [tool.hatch.envs.test]
 python = "3.10"
-skip-install = true   # Don't try to install dependencies
+dependencies = [
+  "pytest>=7.0.0",
+  "pytest-asyncio>=0.21.0",
+  "pytest-cov>=4.1.0",
+  "pytest-mock>=3.10.0",
+]
 
 [tool.hatch.envs.test.scripts]
-# Basic test commands
 test = "pytest {args}"
 test-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml {args}"
 

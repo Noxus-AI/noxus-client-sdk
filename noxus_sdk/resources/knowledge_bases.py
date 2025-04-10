@@ -285,27 +285,27 @@ class KnowledgeBase(BaseResource):
         return KnowledgeBaseDocument(**response)
 
     def list_documents(
-        self, status: DocumentStatus | None = None, page: int = 1, page_size: int = 10
+        self, status: DocumentStatus, page: int = 1, page_size: int = 10
     ) -> builtins.list[KnowledgeBaseDocument]:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if status:
             params["status"] = status
 
         response = self.client.get(
-            f"/v1/knowledge-bases/{self.id}/documents/{status if status else ''}",
+            f"/v1/knowledge-bases/{self.id}/documents/{status}",
             params=params,
         )
         return [KnowledgeBaseDocument(**doc) for doc in response["items"]]
 
     async def alist_documents(
-        self, status: DocumentStatus | None = None, page: int = 1, page_size: int = 10
+        self, status: DocumentStatus, page: int = 1, page_size: int = 10
     ) -> builtins.list[KnowledgeBaseDocument]:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if status:
             params["status"] = status
 
         response = await self.client.aget(
-            f"/v1/knowledge-bases/{self.id}/documents/{status if status else ''}",
+            f"/v1/knowledge-bases/{self.id}/documents/{status}",
             params=params,
         )
         return [KnowledgeBaseDocument(**doc) for doc in response["items"]]
@@ -476,7 +476,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
     def list_documents(
         self,
         knowledge_base_id: str,
-        status: DocumentStatus | None = None,
+        status: DocumentStatus,
         page: int = 1,
         page_size: int = 10,
     ) -> builtins.list[KnowledgeBaseDocument]:
@@ -485,7 +485,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
             params["status"] = status
 
         response = self.client.get(
-            f"/v1/knowledge-bases/{knowledge_base_id}/documents/{status if status else ''}",
+            f"/v1/knowledge-bases/{knowledge_base_id}/documents/{status}",
             params=params,
         )
         return [KnowledgeBaseDocument(**doc) for doc in response]
@@ -493,7 +493,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
     async def alist_documents(
         self,
         knowledge_base_id: str,
-        status: DocumentStatus | None = None,
+        status: DocumentStatus,
         page: int = 1,
         page_size: int = 10,
     ) -> builtins.list[KnowledgeBaseDocument]:
@@ -502,7 +502,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
             params["status"] = status
 
         response = await self.client.aget(
-            f"/v1/knowledge-bases/{knowledge_base_id}/documents/{status if status else ''}",
+            f"/v1/knowledge-bases/{knowledge_base_id}/documents/{status}",
             params=params,
         )
         return [KnowledgeBaseDocument(**doc) for doc in response]

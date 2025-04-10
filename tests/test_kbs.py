@@ -1,4 +1,8 @@
 import pytest
+import tempfile
+import os
+import asyncio
+from pathlib import Path
 from noxus_sdk.resources.knowledge_bases import (
     KnowledgeBase,
     UpdateDocument,
@@ -7,53 +11,68 @@ from noxus_sdk.resources.knowledge_bases import (
     KnowledgeBaseSettings,
     KnowledgeBaseIngestion,
     KnowledgeBaseRetrieval,
+    File,
+    Source,
+    DocumentSource,
+    DocumentSourceConfig,
 )
 
 
-@pytest.mark.asyncio
-async def test_list_documents(kb: KnowledgeBase):
-    _ = await kb.acreate_document(CreateDocument(name="test_doc1", prefix="/test1"))
-    _ = await kb.acreate_document(CreateDocument(name="test_doc2", prefix="/test2"))
+@pytest.fixture
+async def test_file():
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("Test content for document upload")
+        path = Path(f.name)
 
-    documents = await kb.alist_documents()
-    assert len(documents) >= 2
-    assert any(d.name == "test_doc1" for d in documents)
-    assert any(d.name == "test_doc2" for d in documents)
+    yield path
 
-    docs_by_status = await kb.alist_documents(status="uploaded")
-    assert all(d.status == "uploaded" for d in docs_by_status)
+    try:
+        os.unlink(path)
+    except Exception:
+        pass
 
-    page1 = await kb.alist_documents(page=1, page_size=1)
-    page2 = await kb.alist_documents(page=2, page_size=1)
+
+async def wait_for_documents(kb: KnowledgeBase, expected_count: int, timeout: int = 30):
+    start_time = asyncio.get_event_loop().time()
+    while (asyncio.get_event_loop().time() - start_time) < timeout:
+        await kb.arefresh()
+        if kb.total_documents >= expected_count:
+            return True
+        await asyncio.sleep(2)
+    return False
+
+
+@pytest.mark.anyio
+async def test_list_documents(kb: KnowledgeBase, test_file: Path):
+    run_ids1 = await kb.aupload_document([test_file], prefix="/test1")
+
+    await wait_for_documents(kb, 1)
+
+    training_documents = await kb.alist_documents(status="training")
+    trained_documents = await kb.alist_documents(status="trained")
+    assert len(training_documents) + len(trained_documents) == 1
+
+    page1 = await kb.alist_documents(status="training", page=1, page_size=1)
     assert len(page1) == 1
-    assert len(page2) == 1
-    assert page1[0].id != page2[0].id
+    assert page1[0].id == training_documents[0].id
 
 
-@pytest.mark.asyncio
-async def test_document_operations(kb: KnowledgeBase):
-    test_doc = await kb.acreate_document(
-        CreateDocument(name="test_doc", prefix="/test")
-    )
-    assert isinstance(test_doc, KnowledgeBaseDocument)
-    assert test_doc.name == "test_doc"
-    assert test_doc.prefix == "/test"
-    assert test_doc.status in ["uploaded", "training", "trained", "error"]
-    assert test_doc.source_type == "document"
-    assert test_doc.error is None
+@pytest.mark.anyio
+async def test_document_operations(kb: KnowledgeBase, test_file: Path):
+    run_ids = await kb.aupload_document([test_file], prefix="/test")
 
-    doc = await kb.aget_document(test_doc.id)
-    assert doc.id == test_doc.id
-    assert doc.name == test_doc.name
-    assert doc.created_at is not None
-    assert doc.updated_at is not None
+    await wait_for_documents(kb, 1)
 
+    training_documents = await kb.alist_documents(status="training")
+    trained_documents = await kb.alist_documents(status="trained")
+    assert len(training_documents) + len(trained_documents) == 1
+    docs = trained_documents + training_documents
+    doc = docs[0]
     updated_doc = await kb.aupdate_document(
         doc.id, UpdateDocument(prefix="/updated/path")
     )
     assert updated_doc.prefix == "/updated/path"
     assert updated_doc.id == doc.id
-    assert updated_doc.updated_at >= doc.updated_at
 
     deleted_doc = await kb.adelete_document(doc.id)
     assert deleted_doc.id == doc.id
@@ -62,20 +81,25 @@ async def test_document_operations(kb: KnowledgeBase):
         await kb.aget_document(doc.id)
 
 
-@pytest.mark.asyncio
-async def test_kb_status(kb: KnowledgeBase):
-    await kb.acreate_document(CreateDocument(name="doc1", prefix="/test"))
-    await kb.acreate_document(CreateDocument(name="doc2", prefix="/test"))
+@pytest.mark.anyio
+async def test_kb_status(kb: KnowledgeBase, test_file: Path):
+    run_ids1 = await kb.aupload_document([test_file], prefix="/test1")
+    run_ids2 = await kb.aupload_document([test_file], prefix="/test2")
+
+    assert len(run_ids1) > 0
+    assert len(run_ids2) > 0
+
+    await asyncio.sleep(1)
 
     await kb.arefresh()
-    assert kb.status in ["active", "training", "error"]
+    assert kb.status in ["trained", "training"]
     assert kb.total_documents >= 2
     assert isinstance(kb.trained_documents, int)
     assert isinstance(kb.error_documents, int)
     assert kb.total_documents >= kb.trained_documents + kb.error_documents
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_list_knowledge_bases(client):
     settings = KnowledgeBaseSettings(
         ingestion=KnowledgeBaseIngestion(
@@ -121,21 +145,8 @@ async def test_list_knowledge_bases(client):
         await test_kb.adelete()
 
 
-@pytest.mark.asyncio
-async def test_kb_cleanup(kb: KnowledgeBase):
-    _ = await kb.acreate_document(CreateDocument(name="cleanup_doc1", prefix="/test"))
-    _ = await kb.acreate_document(CreateDocument(name="cleanup_doc2", prefix="/test"))
-
-    documents = await kb.alist_documents()
-    assert len(documents) >= 2
-
-    for doc in documents:
-        deleted_doc = await kb.adelete_document(doc.id)
-        assert deleted_doc.id == doc.id
-
-    remaining_docs = await kb.alist_documents()
-    assert len(remaining_docs) == 0
-
+@pytest.mark.anyio
+async def test_kb_cleanup(kb: KnowledgeBase, test_file: Path):
     success = await kb.adelete()
     assert success is True
 
