@@ -458,8 +458,8 @@ agent = client.agents.get(agent_id="agent_id_here")
 #### Creating an Agent
 
 ```python
-from noxus_sdk.resources.assistants import AgentSettings
 from noxus_sdk.resources.conversations import WebResearchTool
+from noxus_sdk.resources.assistants import AgentSettings
 
 # Define agent tool
 tool = WebResearchTool(
