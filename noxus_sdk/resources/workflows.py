@@ -135,6 +135,10 @@ class WorkflowService(BaseService[Workflow]):
         w = self.client.get(f"/v1/workflows/{workflow_id}")
         return Workflow(client=self.client, **w)
 
+    async def aget(self, workflow_id: str) -> "Workflow":
+        w = await self.client.aget(f"/v1/workflows/{workflow_id}")
+        return Workflow(client=self.client, **w)
+
     def update(
         self, workflow_id: str, workflow: WorkflowDefinition, force: bool = False
     ) -> "Workflow":
