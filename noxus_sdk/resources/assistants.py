@@ -22,7 +22,7 @@ class Agent(BaseResource):
             {"name": name, "settings": settings},
         )
         self = Agent(client=self.client, **result)
-        return self
+        return self  # noqa: RET504
 
     def delete(self) -> None:
         self.client.delete(f"/v1/agents/{self.id}")

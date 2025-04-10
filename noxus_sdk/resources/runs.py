@@ -25,14 +25,14 @@ class Run(BaseResource):
     def refresh(self) -> "Run":
         response = self.client.get(f"/v1/workflows/{self.workflow_id}/runs/{self.id}")
         self = Run(client=self.client, **response)
-        return self
+        return self  # noqa: RET504
 
     async def arefresh(self) -> "Run":
         response = await self.client.aget(
             f"/v1/workflows/{self.workflow_id}/runs/{self.id}"
         )
         self = Run(client=self.client, **response)
-        return self
+        return self  # noqa: RET504
 
     def wait(self, interval: int = 5, output_only: bool = False):
         while self.status not in ["failed", "completed"]:

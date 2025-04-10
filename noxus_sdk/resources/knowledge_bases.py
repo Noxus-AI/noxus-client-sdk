@@ -158,12 +158,12 @@ class KnowledgeBase(BaseResource):
     def refresh(self) -> "KnowledgeBase":
         response = self.client.get(f"/v1/knowledge-bases/{self.id}")
         self = KnowledgeBase(client=self.client, **response)
-        return self
+        return self  # noqa: RET504
 
     async def arefresh(self) -> "KnowledgeBase":
         response = await self.client.aget(f"/v1/knowledge-bases/{self.id}")
         self = KnowledgeBase(client=self.client, **response)
-        return self
+        return self  # noqa: RET504
 
     def delete(self) -> bool:
         response = self.client.delete(f"/v1/knowledge-bases/{self.id}")
