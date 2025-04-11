@@ -1,4 +1,6 @@
 import os
+import asyncio
+import time
 from typing import Any, BinaryIO
 
 import httpx
@@ -30,19 +32,26 @@ class Requester:
             headers_.update(headers)
         if self.extra_headers:
             headers_.update(self.extra_headers)
-        async with httpx.AsyncClient() as client:
-            response = await client.request(
-                method,
-                f"{self.base_url}{url}",
-                headers=headers_,
-                follow_redirects=True,
-                json=json,
-                files=files,
-                params=params,
-                timeout=timeout or httpx.USE_CLIENT_DEFAULT,
-            )
-            response.raise_for_status()
-            return response.json()
+        ratelimited = True
+        while ratelimited:
+            async with httpx.AsyncClient() as client:
+                response = await client.request(
+                    method,
+                    f"{self.base_url}{url}",
+                    headers=headers_,
+                    follow_redirects=True,
+                    json=json,
+                    files=files,
+                    params=params,
+                    timeout=timeout or httpx.USE_CLIENT_DEFAULT,
+                )
+                if response.status_code == 429:
+                    await asyncio.sleep(1)
+                    continue
+                ratelimited = False
+                response.raise_for_status()
+                return response.json()
+        raise Exception("Request failed")
 
     async def aget(
         self,
@@ -133,18 +142,26 @@ class Requester:
             headers_.update(headers)
         if self.extra_headers:
             headers_.update(self.extra_headers)
-        response = httpx.request(
-            method,
-            f"{self.base_url}{url}",
-            headers=headers_,
-            follow_redirects=True,
-            json=json,
-            files=files,
-            params=params,
-            timeout=timeout or 10,
-        )
-        response.raise_for_status()
-        return response.json()
+        ratelimited = True
+        while ratelimited:
+            response = httpx.request(
+                method,
+                f"{self.base_url}{url}",
+                headers=headers_,
+                follow_redirects=True,
+                json=json,
+                files=files,
+                params=params,
+                timeout=timeout or 10,
+            )
+            if response.status_code == 429:
+                ratelimited = True
+                time.sleep(1)
+                continue
+            ratelimited = False
+            response.raise_for_status()
+            return response.json()
+        raise Exception("Request failed")
 
     def get(
         self,
