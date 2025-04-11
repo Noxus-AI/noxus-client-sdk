@@ -12,6 +12,8 @@ from noxus_sdk.resources.assistants import (
     KnowledgeBaseSelectorTool,
     NoxusQaTool,
     WebResearchTool,
+    KnowledgeBaseQaTool,
+    KnowledgeBaseInfo,
 )
 from noxus_sdk.resources.workflows import (
     WorkflowDefinition,
@@ -245,6 +247,9 @@ async def test_agent_with_all_tool_types(client: Client):
             WebResearchTool(),
             NoxusQaTool(),
             KnowledgeBaseSelectorTool(),
+            KnowledgeBaseQaTool(
+                knowledge_base=KnowledgeBaseInfo(id=test_kb.id, name=test_kb.name)
+            ),
             WorkflowTool(
                 workflow=WorkflowInfo(
                     id=created_workflow.id, name=created_workflow.name
@@ -258,13 +263,14 @@ async def test_agent_with_all_tool_types(client: Client):
 
     try:
         # Verify all tools were set
-        assert len(agent.definition.tools) == 4
+        assert len(agent.definition.tools) == 5
 
         # Check if all tool types are present
         tool_types = [tool.type for tool in agent.definition.tools]
         assert "web_research" in tool_types
         assert "noxus_qa" in tool_types
         assert "kb_selector" in tool_types
+        assert "kb_qa" in tool_types
         assert "workflow" in tool_types
 
         # Verify specific tool properties
