@@ -60,13 +60,13 @@ class KnowledgeBaseQaTool(ConversationTool):
 
 class WorkflowInfo(BaseModel):
     id: str
-    name: str
+    name: str = ""
     description: str | None = None
 
 
 class KnowledgeBaseInfo(BaseModel):
     id: str
-    name: str
+    name: str = ""
     description: str | None = None
 
 
