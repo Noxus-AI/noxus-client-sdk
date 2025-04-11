@@ -1,4 +1,5 @@
 import os
+
 from noxus_sdk import Client
 from noxus_sdk.workflows import WorkflowDefinition
 

@@ -1,5 +1,6 @@
 from noxus_sdk.resources.base import BaseService
 from noxus_sdk.workflows import WorkflowDefinition
+from pydantic import ConfigDict
 
 
 class WorkflowService(BaseService[WorkflowDefinition]):

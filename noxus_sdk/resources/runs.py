@@ -1,8 +1,9 @@
-import time
 import asyncio
+import builtins
+import time
 
 from noxus_sdk.resources.base import BaseResource, BaseService
-import builtins
+from pydantic import BaseModel, ConfigDict
 
 
 class RunFailure(Exception):
@@ -10,6 +11,8 @@ class RunFailure(Exception):
 
 
 class Run(BaseResource):
+    model_config = ConfigDict(validate_assignment=True)
+
     id: str
     group_id: str
     workflow_id: str

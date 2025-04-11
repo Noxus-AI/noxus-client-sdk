@@ -1,17 +1,6 @@
 import pytest
-import os
-from noxus_sdk.workflows import WorkflowDefinition, ConfigError
 from noxus_sdk.client import Client
-
-
-@pytest.fixture
-def api_key():
-    return os.environ.get("NOXUS_API_KEY", "")
-
-
-@pytest.fixture
-def client(api_key: str):
-    return Client(api_key)
+from noxus_sdk.workflows import ConfigError, WorkflowDefinition
 
 
 @pytest.mark.test

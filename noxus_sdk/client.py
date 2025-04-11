@@ -1,8 +1,11 @@
 import os
-import anyio
+from typing import Any, BinaryIO
+
 import httpx
-import time
-from typing import Any
+
+FileContent = BinaryIO | bytes | str
+HttpxFile = tuple[str, tuple[str, FileContent, str | None]]
+RequestFiles = dict[str, Any] | list[HttpxFile] | None
 
 
 class Requester:
@@ -18,6 +21,7 @@ class Requester:
         url: str,
         headers: dict | None = None,
         json: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
@@ -33,6 +37,7 @@ class Requester:
                 headers=headers_,
                 follow_redirects=True,
                 json=json,
+                files=files,
                 params=params,
                 timeout=timeout or httpx.USE_CLIENT_DEFAULT,
             )
@@ -78,13 +83,20 @@ class Requester:
     async def apost(
         self,
         url: str,
-        body: Any,
+        body: Any | None = None,
         headers: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
         return await self.arequest(
-            "POST", url, json=body, headers=headers, timeout=timeout, params=params
+            "POST",
+            url,
+            json=body,
+            headers=headers,
+            files=files,
+            params=params,
+            timeout=timeout,
         )
 
     async def apatch(
@@ -112,6 +124,7 @@ class Requester:
         url: str,
         headers: dict | None = None,
         json: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
@@ -126,6 +139,7 @@ class Requester:
             headers=headers_,
             follow_redirects=True,
             json=json,
+            files=files,
             params=params,
             timeout=timeout or 10,
         )
@@ -177,13 +191,20 @@ class Requester:
     def post(
         self,
         url: str,
-        body: Any,
+        body: Any | None = None,
         headers: dict | None = None,
+        files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
     ):
         return self.request(
-            "POST", url, json=body, headers=headers, timeout=timeout, params=params
+            "POST",
+            url,
+            json=body,
+            headers=headers,
+            files=files,
+            params=params,
+            timeout=timeout,
         )
 
     def delete(
@@ -204,13 +225,13 @@ class Client(Requester):
         load_me: bool = True,
         extra_headers: dict | None = None,
     ):
-        from noxus_sdk.workflows import load_node_types
-        from noxus_sdk.resources.workflows import WorkflowService
         from noxus_sdk.resources.assistants import AgentService
         from noxus_sdk.resources.conversations import ConversationService
         from noxus_sdk.resources.knowledge_bases import KnowledgeBaseService
         from noxus_sdk.resources.runs import RunService
         from noxus_sdk.resources.admin import AdminService
+        from noxus_sdk.resources.workflows import WorkflowService
+        from noxus_sdk.workflows import load_node_types
 
         self.api_key = api_key
         self.base_url = os.environ.get("NOXUS_BACKEND_URL", base_url)

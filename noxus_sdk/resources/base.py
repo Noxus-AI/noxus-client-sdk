@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic, TYPE_CHECKING
+from typing import TypeVar, Generic
 from pydantic import BaseModel, ConfigDict, Field
 
 from noxus_sdk.client import Client

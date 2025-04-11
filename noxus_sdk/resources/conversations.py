@@ -1,8 +1,15 @@
-from uuid import UUID, uuid4
-from typing import Any
 from datetime import datetime
-from typing import Annotated, Literal
-from pydantic import BaseModel, Discriminator, Field
+from typing import Annotated, Any, Literal
+from uuid import UUID, uuid4
+
+from pydantic import (
+    BaseModel,
+    Discriminator,
+    Field,
+    ValidationError,
+    model_validator,
+    ConfigDict,
+)
 
 from noxus_sdk.resources.base import BaseResource, BaseService
 
@@ -49,13 +56,19 @@ class KnowledgeBaseQaTool(ConversationTool):
     kb_id: str | None = None
 
 
+class WorkflowInfo(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+
+
 class WorkflowTool(ConversationTool):
     """Tool that allows the user to run a workflow"""
 
     type: Literal["workflow"] = "workflow"
     name: str = "Workflow Runner"
     description: str = "Run a workflow"
-    workflow_id: str | dict | None = None
+    workflow: WorkflowInfo
 
 
 AnyToolSettings = Annotated[
@@ -79,16 +92,24 @@ class ConversationSettings(BaseModel):
 class ConversationFile(BaseModel):
     status: Literal["success"] = "success"
     name: str
-    url: str
+    b64_content: str | None = None
+    url: str | None = None
     id: str = Field(default_factory=lambda: str(uuid4()))
     size: int = 1
     type: str = ""
 
+    @model_validator(mode="after")
+    def validate_content_url(self):
+        if self.b64_content is None and self.url is None:
+            raise ValidationError("Either base64 content or url must be provided")
+        return self
+
 
 class MessageRequest(BaseModel):
     content: str
-    tool: Literal["web_research", "kb_qa"] | str | None = None
+    tool: Literal["web_research", "kb_qa", "workflow"] | str | None = None
     kb_id: str | None = None
+    workflow_id: str | None = None
     files: list[ConversationFile] | None = None
     model_selection: list[str] | None = None
 
@@ -100,6 +121,8 @@ class Message(BaseModel):
 
 
 class Conversation(BaseResource):
+    model_config = ConfigDict(validate_assignment=True)
+
     id: str
     name: str
     created_at: str
@@ -122,11 +145,11 @@ class Conversation(BaseResource):
 
     async def aget_messages(self) -> list[Message]:
         response = await self.arefresh()
-        return response.messages
+        return [Message.model_validate(msg) for msg in response.messages]
 
     def get_messages(self) -> list[Message]:
         response = self.refresh()
-        return response.messages
+        return [Message.model_validate(msg) for msg in response.messages]
 
     async def aadd_message(self, message: MessageRequest) -> "Conversation":
         response = await self.client.apost(
@@ -150,7 +173,7 @@ class Conversation(BaseResource):
         if len(self.messages) == 0:
             raise ValueError("No response from the server")
 
-        return self.messages[-1]
+        return Message.model_validate(self.messages[-1])
 
 
 class ConversationService(BaseService[Conversation]):
@@ -181,19 +204,18 @@ class ConversationService(BaseService[Conversation]):
         if (settings is None and agent_id is None) or (
             settings is not None and agent_id is not None
         ):
-            raise ValueError("Exactly one of settings or assistant_id must be provided")
+            raise ValueError("Exactly one of settings or agent_id must be provided")
 
         params = {}
-        body: dict[str, Any] = {"name": name}
-
         if agent_id:
             params["assistant_id"] = agent_id
-        if settings:
-            body["settings"] = settings.model_dump()
+
+        # Match CreateConversation schema
+        req = {"name": name, "settings": settings.model_dump() if settings else None}
 
         result = self.client.post(
             "/v1/conversations",
-            body,
+            body=req,
             params=params,
         )
         return Conversation(client=self.client, **result)
@@ -207,19 +229,18 @@ class ConversationService(BaseService[Conversation]):
         if (settings is None and agent_id is None) or (
             settings is not None and agent_id is not None
         ):
-            raise ValueError("Exactly one of settings or assistant_id must be provided")
+            raise ValueError("Exactly one of settings or agent_id must be provided")
 
         params = {}
-        body: dict[str, Any] = {"name": name}
-
         if agent_id:
             params["assistant_id"] = agent_id
-        if settings:
-            body["settings"] = settings.model_dump()
+
+        # Match CreateConversation schema
+        req = {"name": name, "settings": settings.model_dump() if settings else None}
 
         result = await self.client.apost(
             "/v1/conversations",
-            body,
+            body=req,
             params=params,
         )
         return Conversation(client=self.client, **result)
@@ -233,20 +254,26 @@ class ConversationService(BaseService[Conversation]):
         return Conversation(client=self.client, **result)
 
     def update(
-        self, conversation_id: str, name: str, settings: ConversationSettings
+        self,
+        conversation_id: str,
+        name: str | None = None,
+        settings: ConversationSettings | None = None,
     ) -> Conversation:
         result = self.client.patch(
             f"/v1/conversations/{conversation_id}",
-            {"name": name, "settings": settings.model_dump()},
+            {"name": name, "settings": settings.model_dump() if settings else None},
         )
         return Conversation(client=self.client, **result)
 
     async def aupdate(
-        self, conversation_id: str, name: str, settings: ConversationSettings
+        self,
+        conversation_id: str,
+        name: str | None = None,
+        settings: ConversationSettings | None = None,
     ) -> Conversation:
         result = await self.client.apatch(
             f"/v1/conversations/{conversation_id}",
-            {"name": name, "settings": settings.model_dump()},
+            {"name": name, "settings": settings.model_dump() if settings else None},
         )
         return Conversation(client=self.client, **result)
 

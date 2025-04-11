@@ -1,6 +1,7 @@
 import os
-from noxus_sdk.workflows import WorkflowDefinition
+
 from noxus_sdk.client import Client
+from noxus_sdk.workflows import WorkflowDefinition
 
 api_key = os.getenv("NOXUS_API_KEY")
 if api_key is None:

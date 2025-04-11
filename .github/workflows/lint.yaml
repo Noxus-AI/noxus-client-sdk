@@ -26,6 +26,6 @@ jobs:
       - name: Format code
         run: hatch fmt --check
       - name: Test code
-        run: hatch test
+        run: hatch run test:test-cov
         env:
           NOXUS_API_KEY: ${{ secrets.NOXUS_API_KEY }}
