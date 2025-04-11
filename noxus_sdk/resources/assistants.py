@@ -19,7 +19,7 @@ class Agent(BaseResource):
     id: str
     name: str
     definition: AgentSettings
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, extra="allow")
 
     def update(self, name: str, settings: AgentSettings) -> "Agent":
         result = self.client.patch(
