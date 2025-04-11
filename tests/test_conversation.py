@@ -1,3 +1,4 @@
+import base64
 from uuid import uuid4
 
 import httpx
@@ -179,7 +180,7 @@ async def test_conversation_with_noxus_qa(client: Client):
 
 
 @pytest.mark.anyio
-async def test_conversation_with_file(
+async def test_conversation_with_file_b64(
     client: Client, conversation_settings: ConversationSettings
 ):
     conversation = await client.conversations.acreate(
@@ -188,14 +189,21 @@ async def test_conversation_with_file(
 
     try:
         file = ConversationFile(
-            name="test.txt", url="https://example.com/test.txt", status="success"
+            name="test.txt",
+            status="success",
+            b64_content=base64.b64encode(b"Hello, world!").decode("utf-8"),
         )
 
-        message = MessageRequest(content="Process this file", files=[file])
+        message = MessageRequest(content="What does the file say?", files=[file])
 
         await conversation.aadd_message(message)
         messages = await conversation.aget_messages()
         assert len(messages) >= 1
+        assert any(
+            "hello, world!" in part.get("content", "").lower()
+            for msg in messages
+            for part in msg.message_parts
+        )
 
     finally:
         await client.conversations.adelete(conversation.id)

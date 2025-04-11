@@ -1,5 +1,6 @@
 from noxus_sdk.resources.base import BaseService
 from noxus_sdk.workflows import WorkflowDefinition
+from pydantic import ConfigDict
 
 
 class WorkflowService(BaseService[WorkflowDefinition]):
@@ -53,7 +54,9 @@ class WorkflowService(BaseService[WorkflowDefinition]):
         w = self.client.patch(
             f"/v1/workflows/{workflow_id}?force={force}", workflow.to_noxus()
         )
-        return WorkflowDefinition.model_validate({"client": self.client, **w})
+        for key, value in w.items():
+            setattr(workflow, key, value)
+        return workflow
 
     async def aupdate(
         self, workflow_id: str, workflow: WorkflowDefinition, force: bool = False
@@ -61,4 +64,6 @@ class WorkflowService(BaseService[WorkflowDefinition]):
         w = await self.client.apatch(
             f"/v1/workflows/{workflow_id}?force={force}", workflow.to_noxus()
         )
-        return WorkflowDefinition.model_validate({"client": self.client, **w})
+        for key, value in w.items():
+            setattr(workflow, key, value)
+        return workflow

@@ -10,6 +10,7 @@ from noxus_sdk.resources.conversations import (
     NoxusQaTool,
     WebResearchTool,
 )
+from pydantic import ConfigDict
 
 AgentSettings: TypeAlias = ConversationSettings
 
@@ -18,14 +19,16 @@ class Agent(BaseResource):
     id: str
     name: str
     definition: AgentSettings
+    model_config = ConfigDict(validate_assignment=True)
 
     def update(self, name: str, settings: AgentSettings) -> "Agent":
         result = self.client.patch(
             f"/v1/agents/{self.id}",
             {"name": name, "definition": settings.model_dump()},
         )
-        self = Agent(client=self.client, **result)
-        return self  # noqa: RET504
+        for key, value in result.items():
+            setattr(self, key, value)
+        return self
 
     def delete(self) -> None:
         self.client.delete(f"/v1/agents/{self.id}")

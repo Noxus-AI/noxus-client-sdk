@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import aiofiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from noxus_sdk.resources.base import BaseResource, BaseService
 from noxus_sdk.resources.runs import Run
@@ -131,6 +131,8 @@ class UpdateDocument(BaseModel):
 
 
 class KnowledgeBase(BaseResource):
+    model_config = ConfigDict(validate_assignment=True)
+
     id: str
     group_id: str
     name: str
@@ -157,13 +159,15 @@ class KnowledgeBase(BaseResource):
 
     def refresh(self) -> "KnowledgeBase":
         response = self.client.get(f"/v1/knowledge-bases/{self.id}")
-        self = KnowledgeBase(client=self.client, **response)
-        return self  # noqa: RET504
+        for key, value in response.items():
+            setattr(self, key, value)
+        return self
 
     async def arefresh(self) -> "KnowledgeBase":
         response = await self.client.aget(f"/v1/knowledge-bases/{self.id}")
-        self = KnowledgeBase(client=self.client, **response)
-        return self  # noqa: RET504
+        for key, value in response.items():
+            setattr(self, key, value)
+        return self
 
     def delete(self) -> bool:
         response = self.client.delete(f"/v1/knowledge-bases/{self.id}")

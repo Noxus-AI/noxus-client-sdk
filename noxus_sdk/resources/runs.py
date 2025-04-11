@@ -3,6 +3,7 @@ import builtins
 import time
 
 from noxus_sdk.resources.base import BaseResource, BaseService
+from pydantic import BaseModel, ConfigDict
 
 
 class RunFailure(Exception):
@@ -10,6 +11,8 @@ class RunFailure(Exception):
 
 
 class Run(BaseResource):
+    model_config = ConfigDict(validate_assignment=True)
+
     id: str
     group_id: str
     workflow_id: str
@@ -24,15 +27,17 @@ class Run(BaseResource):
 
     def refresh(self) -> "Run":
         response = self.client.get(f"/v1/workflows/{self.workflow_id}/runs/{self.id}")
-        self = Run(client=self.client, **response)
-        return self  # noqa: RET504
+        for key, value in response.items():
+            setattr(self, key, value)
+        return self
 
     async def arefresh(self) -> "Run":
         response = await self.client.aget(
             f"/v1/workflows/{self.workflow_id}/runs/{self.id}"
         )
-        self = Run(client=self.client, **response)
-        return self  # noqa: RET504
+        for key, value in response.items():
+            setattr(self, key, value)
+        return self
 
     def wait(self, interval: int = 5, output_only: bool = False):
         while self.status not in ["failed", "completed"]:

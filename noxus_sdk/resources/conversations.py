@@ -2,7 +2,14 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Discriminator, Field
+from pydantic import (
+    BaseModel,
+    Discriminator,
+    Field,
+    ValidationError,
+    model_validator,
+    ConfigDict,
+)
 
 from noxus_sdk.resources.base import BaseResource, BaseService
 
@@ -85,10 +92,17 @@ class ConversationSettings(BaseModel):
 class ConversationFile(BaseModel):
     status: Literal["success"] = "success"
     name: str
-    url: str
+    b64_content: str | None = None
+    url: str | None = None
     id: str = Field(default_factory=lambda: str(uuid4()))
     size: int = 1
     type: str = ""
+
+    @model_validator(mode="after")
+    def validate_content_url(self):
+        if self.b64_content is None and self.url is None:
+            raise ValidationError("Either base64 content or url must be provided")
+        return self
 
 
 class MessageRequest(BaseModel):
@@ -107,6 +121,8 @@ class Message(BaseModel):
 
 
 class Conversation(BaseResource):
+    model_config = ConfigDict(validate_assignment=True)
+
     id: str
     name: str
     created_at: str
@@ -117,13 +133,15 @@ class Conversation(BaseResource):
 
     def refresh(self) -> "Conversation":
         response = self.client.get(f"/v1/conversations/{self.id}")
-        self = Conversation(client=self.client, **response)
-        return self  # noqa: RET504
+        for key, value in response.items():
+            setattr(self, key, value)
+        return self
 
     async def arefresh(self) -> "Conversation":
         response = await self.client.aget(f"/v1/conversations/{self.id}")
-        self = Conversation(client=self.client, **response)
-        return self  # noqa: RET504
+        for key, value in response.items():
+            setattr(self, key, value)
+        return self
 
     async def aget_messages(self) -> list[Message]:
         response = await self.arefresh()
