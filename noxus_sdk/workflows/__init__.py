@@ -315,11 +315,12 @@ class WorkflowDefinition(BaseModel):
             },
         }
 
-    def refresh_from_data(self, **data):
+    def refresh_from_data(self, client: Client | None = None, **data):
         n = self.__class__.model_validate(data)
         for k in n.model_fields_set:
             v = getattr(n, k)
             setattr(self, k, v)
+        self.client = client
         return self
 
     def refresh(self) -> "WorkflowDefinition":

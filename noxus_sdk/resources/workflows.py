@@ -34,13 +34,13 @@ class WorkflowService(BaseService[WorkflowDefinition]):
 
     def save(self, workflow: WorkflowDefinition) -> WorkflowDefinition:
         w = self.client.post(f"/v1/workflows", workflow.to_noxus())
-        workflow.refresh_from_data(**w)
-        return WorkflowDefinition.model_validate({"client": self.client, **w})
+        workflow.refresh_from_data(client=self.client, **w)
+        return workflow
 
     async def asave(self, workflow: WorkflowDefinition) -> WorkflowDefinition:
         w = await self.client.apost(f"/v1/workflows", workflow.to_noxus())
-        workflow.refresh_from_data(**w)
-        return WorkflowDefinition.model_validate({"client": self.client, **w})
+        workflow.refresh_from_data(client=self.client, **w)
+        return workflow
 
     def get(self, workflow_id: str) -> WorkflowDefinition:
         w = self.client.get(f"/v1/workflows/{workflow_id}")
@@ -56,7 +56,8 @@ class WorkflowService(BaseService[WorkflowDefinition]):
         w = self.client.patch(
             f"/v1/workflows/{workflow_id}?force={force}", workflow.to_noxus()
         )
-        return WorkflowDefinition.model_validate({"client": self.client, **w})
+        workflow.refresh_from_data(client=self.client, **w)
+        return workflow
 
     async def aupdate(
         self, workflow_id: str, workflow: WorkflowDefinition, force: bool = False
@@ -64,4 +65,5 @@ class WorkflowService(BaseService[WorkflowDefinition]):
         w = await self.client.apatch(
             f"/v1/workflows/{workflow_id}?force={force}", workflow.to_noxus()
         )
-        return WorkflowDefinition.model_validate({"client": self.client, **w})
+        workflow.refresh_from_data(client=self.client, **w)
+        return workflow
