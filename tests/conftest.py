@@ -1,5 +1,6 @@
 import os
-
+import tempfile
+from pathlib import Path
 import pytest
 from noxus_sdk.client import Client
 from noxus_sdk.resources.knowledge_bases import (
@@ -27,7 +28,21 @@ def client(api_key: str):
 
 
 @pytest.fixture
-async def kb(client: Client):
+async def test_file():
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("Test content for document upload")
+        path = Path(f.name)
+
+    yield path
+
+    try:
+        os.unlink(path)
+    except Exception:
+        pass
+
+
+@pytest.fixture
+async def kb(client: Client, test_file: Path):
     settings = KnowledgeBaseSettings(
         ingestion=KnowledgeBaseIngestion(
             batch_size=10,
@@ -49,6 +64,7 @@ async def kb(client: Client):
         document_types=["text"],
         settings_=settings,
     )
+    # await kb.aupload_document([test_file], prefix="/test1")
 
     yield kb
 
@@ -70,7 +86,7 @@ async def cleanup_resources(client: Client):
         except Exception:
             pass
 
-    # Clean up agents 
+    # Clean up agents
     agents = await client.agents.alist()
     for agent in agents:
         try:
@@ -84,7 +100,7 @@ async def cleanup_resources(client: Client):
             await client.conversations.adelete(conversation.id)
         except Exception:
             pass
-    
+
     workflows = await client.workflows.alist()
     for workflow in workflows:
         try:
