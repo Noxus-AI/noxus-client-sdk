@@ -222,12 +222,14 @@ class Client(Requester):
         api_key: str,
         base_url: str = "https://backend.noxus.ai",
         load_nodes: bool = True,
+        load_me: bool = True,
         extra_headers: dict | None = None,
     ):
         from noxus_sdk.resources.assistants import AgentService
         from noxus_sdk.resources.conversations import ConversationService
         from noxus_sdk.resources.knowledge_bases import KnowledgeBaseService
         from noxus_sdk.resources.runs import RunService
+        from noxus_sdk.resources.admin import AdminService
         from noxus_sdk.resources.workflows import WorkflowService
         from noxus_sdk.workflows import load_node_types
 
@@ -246,6 +248,9 @@ class Client(Requester):
         self.conversations = ConversationService(self)
         self.knowledge_bases = KnowledgeBaseService(self)
         self.runs = RunService(self)
+        self.admin = AdminService(self, enabled=bool(not load_me))
+        if load_me:
+            self.admin.enabled = self.admin.get_me().tenant_admin
 
     def get_nodes(self) -> list[dict]:
         return self.get("/v1/nodes")

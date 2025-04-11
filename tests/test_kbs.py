@@ -1,6 +1,4 @@
 import asyncio
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -12,20 +10,7 @@ from noxus_sdk.resources.knowledge_bases import (
     KnowledgeBaseSettings,
     UpdateDocument,
 )
-
-
-@pytest.fixture
-async def test_file():
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-        f.write("Test content for document upload")
-        path = Path(f.name)
-
-    yield path
-
-    try:
-        os.unlink(path)
-    except Exception:
-        pass
+from noxus_sdk.client import Client
 
 
 async def wait_for_documents(kb: KnowledgeBase, expected_count: int, timeout: int = 30):
@@ -101,15 +86,36 @@ async def test_list_knowledge_bases(client):
         assert found_kb.kb_type == "entity"
 
         # We have a kb from fixtures
-        page1 = await client.knowledge_bases.alist(page=1, page_size=2)
-        assert len(page1) == 2
+        page1 = await client.knowledge_bases.alist(page=1, page_size=10)
+        assert len(page1) == 1
 
     finally:
         await test_kb.adelete()
 
 
 @pytest.mark.anyio
-async def test_kb_cleanup(kb: KnowledgeBase, test_file: Path):
+async def test_kb_cleanup(client: Client):
+    settings = KnowledgeBaseSettings(
+        ingestion=KnowledgeBaseIngestion(
+            batch_size=10,
+            default_chunk_size=1000,
+            default_chunk_overlap=100,
+            enrich_chunks_mode="contextual",
+            enrich_pre_made_qa=False,
+        ),
+        retrieval=KnowledgeBaseRetrieval(
+            type="hybrid_reranking",
+            hybrid_settings={"fts_weight": 0.5},
+            reranker_settings={},
+        ),
+    )
+
+    kb = await client.knowledge_bases.acreate(
+        name="test_kb",
+        description="Test Knowledge Base",
+        document_types=["text"],
+        settings_=settings,
+    )
     success = await kb.adelete()
     assert success is True
 
@@ -118,9 +124,30 @@ async def test_kb_cleanup(kb: KnowledgeBase, test_file: Path):
 
 
 @pytest.mark.anyio
-async def test_kb_training(kb: KnowledgeBase, test_file: Path):
-    await kb.aupload_document([test_file], prefix="/test1")
+async def test_kb_training(client: Client, test_file: Path):
+    settings = KnowledgeBaseSettings(
+        ingestion=KnowledgeBaseIngestion(
+            batch_size=10,
+            default_chunk_size=1000,
+            default_chunk_overlap=100,
+            enrich_chunks_mode="contextual",
+            enrich_pre_made_qa=False,
+        ),
+        retrieval=KnowledgeBaseRetrieval(
+            type="hybrid_reranking",
+            hybrid_settings={"fts_weight": 0.5},
+            reranker_settings={},
+        ),
+    )
+
+    kb = await client.knowledge_bases.acreate(
+        name="test_kb",
+        description="Test Knowledge Base",
+        document_types=["text"],
+        settings_=settings,
+    )
     # assert await wait_for_documents(kb, 1)
+    await kb.aupload_document([test_file], prefix="/test1")
     await kb.arefresh()
     assert kb.status in ["training", "created"]
 

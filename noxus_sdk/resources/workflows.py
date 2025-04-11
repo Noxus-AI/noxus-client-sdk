@@ -34,10 +34,12 @@ class WorkflowService(BaseService[WorkflowDefinition]):
 
     def save(self, workflow: WorkflowDefinition) -> WorkflowDefinition:
         w = self.client.post(f"/v1/workflows", workflow.to_noxus())
+        workflow.refresh_from_data(**w)
         return WorkflowDefinition.model_validate({"client": self.client, **w})
 
     async def asave(self, workflow: WorkflowDefinition) -> WorkflowDefinition:
         w = await self.client.apost(f"/v1/workflows", workflow.to_noxus())
+        workflow.refresh_from_data(**w)
         return WorkflowDefinition.model_validate({"client": self.client, **w})
 
     def get(self, workflow_id: str) -> WorkflowDefinition:
