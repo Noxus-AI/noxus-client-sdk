@@ -54,9 +54,7 @@ class WorkflowService(BaseService[WorkflowDefinition]):
         w = self.client.patch(
             f"/v1/workflows/{workflow_id}?force={force}", workflow.to_noxus()
         )
-        for key, value in w.items():
-            setattr(workflow, key, value)
-        return workflow
+        return WorkflowDefinition.model_validate({"client": self.client, **w})
 
     async def aupdate(
         self, workflow_id: str, workflow: WorkflowDefinition, force: bool = False
@@ -64,6 +62,4 @@ class WorkflowService(BaseService[WorkflowDefinition]):
         w = await self.client.apatch(
             f"/v1/workflows/{workflow_id}?force={force}", workflow.to_noxus()
         )
-        for key, value in w.items():
-            setattr(workflow, key, value)
-        return workflow
+        return WorkflowDefinition.model_validate({"client": self.client, **w})
