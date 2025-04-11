@@ -56,3 +56,38 @@ async def kb(client: Client):
         await kb.adelete()
     except Exception:
         pass
+
+
+@pytest.fixture(autouse=True)
+async def cleanup_resources(client: Client):
+    yield
+
+    # Clean up knowledge bases
+    kbs = await client.knowledge_bases.alist()
+    for kb in kbs:
+        try:
+            await kb.adelete()
+        except Exception:
+            pass
+
+    # Clean up agents 
+    agents = await client.agents.alist()
+    for agent in agents:
+        try:
+            await client.agents.adelete(agent.id)
+        except Exception:
+            pass
+
+    conversations = await client.conversations.alist()
+    for conversation in conversations:
+        try:
+            await client.conversations.adelete(conversation.id)
+        except Exception:
+            pass
+    
+    workflows = await client.workflows.alist()
+    for workflow in workflows:
+        try:
+            await client.workflows.adelete(workflow.id)
+        except Exception:
+            pass

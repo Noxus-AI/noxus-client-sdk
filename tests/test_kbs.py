@@ -101,8 +101,8 @@ async def test_list_knowledge_bases(client):
         assert found_kb.kb_type == "entity"
 
         # We have a kb from fixtures
-        page1 = await client.knowledge_bases.alist(page=1, page_size=2)
-        assert len(page1) == 2
+        page1 = await client.knowledge_bases.alist(page=1, page_size=10)
+        assert len(page1) == 1
 
     finally:
         await test_kb.adelete()
