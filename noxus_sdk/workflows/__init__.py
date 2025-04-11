@@ -371,14 +371,12 @@ class WorkflowDefinition(BaseModel):
         if not self.client:
             raise ValueError("Client not set")
         w = self.client.workflows.save(self)
-        self.refresh_from_data(client=self.client, **w.model_dump())
         return w
 
     async def asave(self):
         if not self.client:
             raise ValueError("Client not set")
         w = await self.client.workflows.asave(self)
-        self.refresh_from_data(client=self.client, **w.model_dump())
         return w
 
     def node(self, name) -> "Node":

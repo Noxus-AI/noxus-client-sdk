@@ -1,5 +1,5 @@
 from typing import TypeVar, Generic, TYPE_CHECKING
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from noxus_sdk.client import Client
 
@@ -8,7 +8,7 @@ T = TypeVar("T")
 
 class BaseResource(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    client: Client
+    client: Client = Field(..., exclude=True)
 
 
 class BaseService(Generic[T]):
