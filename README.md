@@ -75,6 +75,64 @@ Below we provide detailed examples for working with various Noxus resources. Eac
 
 Workflows allow you to define complex sequences of operations that can be executed on demand. They are built with `nodes` (functional and logical blocks) connected through `edges` to form a Graph. Each `node` has its own configuration that defines how it will be executed.
 
+#### Building Workflows
+
+The SDK provides a powerful programmatic way to build complex workflows by connecting different nodes together. To define a structure you can use the `WorkflowDefinition` class, as in the example below:
+
+```python
+from noxus_sdk.workflows import WorkflowDefinition
+
+# Create a new workflow definition
+workflow_def = WorkflowDefinition(name="Simple Workflow")
+
+# Add nodes to the workflow
+input_node = workflow_def.node("InputNode").config(label="Fixed Input", fixed_value=True, value="Write a joke.", type="str")
+ai_node = workflow_def.node("TextGenerationNode").config(
+    template="Please insert a fact about an animal after fulfilling the following request: ((Input 1))",
+    model=["gpt-4o-mini"],
+)
+output_node = workflow_def.node("OutputNode")
+
+# Connect nodes together (from output to input)
+workflow_def.link(input_node.output(), ai_node.input("variables", "Input 1"))
+workflow_def.link(ai_node.output(), output_node.input())
+
+# Save the workflow to Noxus
+simple_workflow = client.workflows.save(workflow_def)
+print(f"Created workflow with ID: {simple_workflow.id}")
+```
+
+A workflow is a graph and does not need to be linear. You can add more nodes and chain them however you like, as long as the connections are valid (a string input expects a string value, a file input expects a file, etc):
+
+```python
+from noxus_sdk.workflows import WorkflowDefinition
+
+# Create a workflow for summarizing and analyzing text
+workflow_def = WorkflowDefinition(name="Complex Workflow")
+
+# Add nodes in sequence
+input_node = workflow_def.node("InputNode")
+text_generator = workflow_def.node("TextGenerationNode").config(template="Write an essay on ((Input 1)).")
+summarizer = workflow_def.node("SummaryNode").config(summary_format="Concise", summary_topic="Summarize the essay in around 300 words.")
+compose = workflow_def.node("ComposeTextNode").config(template="Summary: \n\n ((Input 1)) \n\n Extended text: \n ((Input 2))")
+output = workflow_def.node("OutputNode")
+
+# Create a branched workflow with multiple paths
+workflow_def.link(input_node.output(), text_generator.input("variables", key="Input 1"))
+workflow_def.link(text_generator.output(), summarizer.input())
+workflow_def.link(summarizer.output(), compose.input("variables", key="Input 1"))
+workflow_def.link(text_generator.output(), compose.input("variables", key="Input 2"))
+workflow_def.link(compose.output(), output.input())
+
+# Save the workflow
+complex_workflow = client.workflows.save(workflow_def)
+print(f"Created workflow with ID: {complex_workflow.id}")
+```
+
+> 💡 **Tip**
+>
+> Nodes with variable inputs must be set with the "variables" key. E.g. `node.input("variables", key="Input 1")`.
+
 #### Listing Workflows
 
 ```python
@@ -88,81 +146,31 @@ workflow = client.workflows.get(workflow_id="workflow_id_here")
 print(f"Workflow ID: {workflow.id}, Name: {workflow.name}")
 ```
 
-#### Building Workflows
-
-The SDK provides a powerful programmatic way to build complex workflows by connecting different nodes together:
-
-```python
-from noxus_sdk.workflows import WorkflowDefinition
-
-# Create a new workflow definition
-workflow = WorkflowDefinition(name="Simple Workflow")
-
-# Add nodes to the workflow
-input_node = workflow.node("InputNode").config(label="Fixed Input", fixed_value=True, value="Write a joke.", type="str")
-ai_node = workflow.node("TextGenerationNode").config(
-    template="Please insert a fact about an animal after fulfilling the following request: ((Input 1))",
-    model=["gpt-4o-mini"],
-)
-output_node = workflow.node("OutputNode")
-
-# Connect nodes together (from output to input)
-workflow.link(input_node.output(), ai_node.input("variables", "Input 1"))
-workflow.link(ai_node.output(), output_node.input())
-
-# Save the workflow to Noxus
-#client = Client(api_key="your_api_key_here")
-simple_workflow = workflow.save(client)
-print(f"Created workflow with ID: {simple_workflow.id}")
-```
-
-For more complex workflows, you can also chain multiple nodes more easily:
-
-```python
-from noxus_sdk.workflows import WorkflowDefinition
-
-# Create a workflow for writitng and summarizing an essay
-workflow = WorkflowDefinition(name="Complex Workflow")
-
-# Add nodes in sequence
-input_node = workflow.node("InputNode")
-text_generator = workflow.node("TextGenerationNode").config(template="Write an essay on ((Input 1)).")
-summarizer = workflow.node("SummaryNode").config(summary_format="Concise", summary_topic="Summarize the essay in around 300 words.")
-combiner = workflow.node("ComposeTextNode").config(template="Summary: \n\n ((Input 1)) \n\n Extended text: \n ((Input 2))")
-
-output = workflow.node("OutputNode")
-
-# Create a branched workflow with multiple paths
-workflow.link(input_node.output(), text_generator.input("variables", key="Input 1"))
-workflow.link(text_generator.output(), summarizer.input())
-workflow.link(summarizer.output(), combiner.input("variables", key="Input 1"))
-workflow.link(text_generator.output(), combiner.input("variables", key="Input 2"))
-workflow.link(combiner.output(), output.input())
-
-# Save the workflow
-complex_workflow = workflow.save(client)
-print(f"Created workflow with ID: {complex_workflow.id}")
-```
-
 #### Updating Workflows
 
 You can also update existing workflows if needed. Let's update the `Complex Workflow` from the example above:
 
 ```python
-print(f"Updating workflow '{complex_workflow.name}' with ID: {complex_workflow.id}")
+#We fetch the workflow to update
+workflow_to_update = client.workflows.get(workflow_id="workflow_id_here")
 
 # Update existing workflow name
-complex_workflow.name = "Essay Writer"
+workflow_to_update.name = "Essay Writer"
 
 # Let's add an extra input with the author of the workflow
-input_node = complex_workflow.node("InputNode").config(label="Author", fixed_value=True, value="John Peter Table", type="str")
-  workflow_def.link(
-        input_node3.output("output"), combine_node.input("variables", "Input 3")
-    )
+author_input = workflow_to_update.node("InputNode").config(label="Author", fixed_value=True, value="John Peter Table", type="str")
+# We update the compose node config and connection (notice how we use the label)
+compose = [w for w in workflow_to_update.nodes if w.type == "ComposeTextNode"][0]
+compose.config(
+    template="Summary: \n\n ((Input 1)) \n\n Extended text: \n ((Input 2)) \n\n Author: ((Author))",
+)
+workflow_to_update.link(
+    author_input.output("output"), compose.input("variables", "Author")
+)
 
 # Update the workflow
-client.workflows.update(complex_workflow.id, complex_workflow)
-print(f"Updated workflow {complex_workflow.name}")
+updated_workflow = client.workflows.update(workflow_to_update.id, workflow_to_update)
+print(f"Updated workflow {updated_workflow.name}")
 ```
 
 #### Running Workflows
@@ -183,7 +191,11 @@ run = workflow.run(body={})
 result = run.wait(interval=5)
 print(f"Run status: {result.status}")
 print(f"Output: {result.output}")
+```
 
+#### Listing Runs
+
+```python
 # Get a list of workflow runs
 runs = client.runs.list(workflow_id="workflow_id_here", page=1, page_size=10)
 ```
@@ -192,10 +204,11 @@ The `wait()` method allows you to block until the workflow completes, making it 
 
 > 💡 **Tip**
 >
-> The `input_key` can take two formats:
+> The `input_key` can be:
 >
-> - `{node_id}::{input_name}`. For an **Input Node** the `input_name` is `input`
-> - `{node_id}::{input_name}`. For an **Input Node** the `input_name` is `input`
+> - `{node_label}`. You can define it on the config of a node when creating it.
+> - `{node_input_id}`. You can fetch it by doing something like `node.inputs[0].id`.
+> - `{node_id}::{input_name}`. For an **Input Node** the default `input_name` is `input`.
 
 <br>
 
@@ -242,9 +255,165 @@ The `link_many()` method is a convenience function for creating a linear chain o
 
 <br>
 
+### Knowledge Bases
+
+Knowledge bases allow you to store and retrieve information. They can be used by other Noxus resources like Workflows or Agents:
+
+#### Creating a Knowledge Base
+
+```python
+from noxus_sdk.resources.knowledge_bases import (
+    KnowledgeBaseSettings,
+    KnowledgeBaseIngestion,
+    KnowledgeBaseRetrieval,
+    KnowledgeBaseHybridSettings
+)
+
+# Define knowledge base components
+settings = KnowledgeBaseSettings(
+    ingestion=KnowledgeBaseIngestion(
+        batch_size=10,
+        default_chunk_size=1000,
+        default_chunk_overlap=200,
+        enrich_chunks_mode="contextual",
+        enrich_pre_made_qa=False,
+    ),
+    retrieval=KnowledgeBaseRetrieval(
+        type="hybrid_reranking",
+        hybrid_settings={"fts_weight": 0.3},
+        reranker_settings={}
+    ),
+)
+
+
+# Create a new knowledge base
+knowledge_base = client.knowledge_bases.create(
+    name="Example Knowledge Base",
+    description="A sample knowledge base",
+    document_types=["pdf", "txt"],
+    settings_=kb_settings
+)
+print(f"Created Knowledge Base ID: {knowledge_base.id}")
+```
+
+The ingestion settings control how documents are processed, while the retrieval settings determine how information is retrieved from the knowledge base.
+
+#### Listing Knowledge Bases
+
+```python
+# List all knowledge bases
+knowledge_bases = client.knowledge_bases.list(page=1, page_size=10)
+for kb in knowledge_bases:
+    print(f"Knowledge Base ID: {kb.id}, Name: {kb.name}")
+
+# Get a specific knowledge base
+kb = client.knowledge_bases.get(knowledge_base_id="your_kb_id")
+```
+
+#### More Knowledge Base Operations
+
+```python
+from noxus_sdk.resources.knowledge_bases import (
+    UpdateDocument,
+    DocumentStatus,
+    RunStatus,
+    File,
+    Source,
+    DocumentSource,
+    DocumentSourceConfig,
+    UpdateDocument
+)
+
+#Get the knowledge base
+kb = client.knowledge_bases.get(knowledge_base_id="your_kb_id")
+
+#Add a file (this process will take some time until the file is available)
+run_ids = kb.upload_document(
+    files=["notebook_kb_test.txt"],
+    prefix="/files" #Where it will be stored on the KB
+)
+print(f"Upload started with run IDs: {run_ids}")
+
+# We can also monitor these runs
+print("\n=== Checking Runs ===")
+runs = kb.get_runs(status="running")
+print(f"Active runs: {len(runs)}")
+
+# List documents
+print("\n=== Listing Documents ===")
+documents = kb.list_documents(status="trained")
+for doc in documents:
+    print(f"Document: {doc.name} (Status: {doc.status})")
+
+# Get and update a document if any exist
+if documents:
+    doc = kb.get_document(documents[0].id)
+    print(f"\nGot document: {doc.name}")
+
+    updated_doc = kb.update_document(
+        doc.id,
+        UpdateDocument(prefix="/updated/path")
+    )
+    print(f"Updated document prefix to: {updated_doc.prefix}")
+
+# Refresh KB to see latest status
+kb.refresh()
+print(f"\nKB status: {kb.status}")
+print(f"Total documents: {kb.total_documents}")
+print(f"Trained documents: {kb.trained_documents}")
+print(f"Error documents: {kb.error_documents}")
+
+# List all knowledge bases
+print("\n=== All Knowledge Bases ===")
+knowledge_bases = client.knowledge_bases.list(page=1, page_size=10)
+for kb in knowledge_bases:
+    print(f"KB: {kb.name} (ID: {kb.id})")
+
+# Cleanup
+print("\n=== Cleanup ===")
+if documents:
+    for doc in documents:
+        kb.delete_document(doc.id)
+        print(f"Deleted document: {doc.name}")
+
+success = kb.delete()
+print(f"Knowledge base deletion: {'successful' if success else 'failed'}")
+```
+
+<br>
+
 ### Conversations
 
 Conversations represent chat interactions with AI models. Besides their base configuration, they can be augmented to use different tools.
+
+#### Creating a Conversation
+
+```python
+from noxus_sdk.resources.conversations import (
+    ConversationSettings,
+    MessageRequest,
+    WebResearchTool,
+)
+
+# Create conversation tools
+web_research_tool = WebResearchTool(
+    enabled=True,
+    extra_instructions="Focus on recent and reliable sources."
+)
+
+# Define conversation settings
+settings = ConversationSettings(
+    model_selection=["gpt-4o-mini"],
+    temperature=0.7,
+    max_tokens=150,
+    tools=[web_research_tool],
+    extra_instructions="Please be concise."
+)
+
+# Create a new conversation
+conversation = client.conversations.create(name="Example Conversation", settings=settings)
+print(f"Created Conversation ID: {conversation.id}")
+```
 
 #### Listing Conversations
 
@@ -258,89 +427,36 @@ for conv in conversations:
 conversation = client.conversations.get(conversation_id="conversation_id_here")
 ```
 
-#### Creating a Conversation
-
-```python
-from noxus_sdk.resources.conversations import (
-    ConversationSettings,
-    MessageRequest,
-    WebResearchTool,
-    KnowledgeBaseQaTool
-)
-
-# Create conversation tools
-web_research_tool = WebResearchTool(
-    enabled=True,
-    extra_instructions="Focus on recent and reliable sources."
-)
-
-kb_qa_tool = KnowledgeBaseQaTool(
-    enabled=True,
-    kb_id="knowledge_base_uuid_here",
-    extra_instructions="Reference specific sections when possible."
-)
-
-# Define conversation settings
-settings = ConversationSettings(
-    model_selection=["gpt-4o-mini"],
-    temperature=0.7,
-    max_tokens=150,
-    tools=[web_research_tool, kb_qa_tool],
-    extra_instructions="Please be concise."
-)
-
-# Create a new conversation
-conversation = client.conversations.create(name="Example Conversation", settings=settings)
-print(f"Created Conversation ID: {conversation.id}")
-```
-
-#### Deleting a Conversation
-
-```python
-# Delete a conversation
-client.conversations.delete(conversation_id="conversation_id_here")
-```
-
 #### Sending Messages in a Conversation
 
 Once you have a conversation, you can add messages to it and get the AI's response:
 
 ```python
+import base64
 from noxus_sdk.resources.conversations import MessageRequest, ConversationFile
 
 # Simple message without using any tools
-message = MessageRequest(content="Tell me about machine learning")
+message = MessageRequest(content="How are you?")
 response = conversation.add_message(message)
 print(f"AI Response: {response.message_parts} \n\n")
 
 # Message using web research tool
 web_research_message = MessageRequest(
-    content="What are the latest advancements in quantum computing?",
+    content="What is the wordle word of yesterday?",
     tool="web_research"
 )
 response = conversation.add_message(web_research_message)
 print(f"Web Research Tool response: {response.message_parts} \n\n")
 
-# Message with knowledge base query
-kb_message = MessageRequest(
-    content="What does our documentation say about API keys?",
-    tool="kb_qa",
-    kb_id="knowledge_base_uuid_here"
-)
-response = conversation.add_message(kb_message)
-print(f"Knowledge Base response: {response.message_parts} \n\n")
-
 # Message with attached files
 file = ConversationFile(
-    name="Eurasian_wolf_2.jpg",
-    url="https://en.wikipedia.org/wiki/Wolf#/media/File:Eurasian_wolf_2.jpg"
+    name="test.txt",
+    status="success",
+    b64_content=base64.b64encode(b"Hello, world!").decode("utf-8"),
 )
-file_message = MessageRequest(
-    content="Describe the provided image",
-    files=[file]
-)
-response = conversation.add_message(file_message)
-print(f"File response: {response.message_parts} \n\n")
+message = MessageRequest(content="What does the file say?", files=[file])
+response = conversation.add_message(message)
+print(f"Message with file response: {response.message_parts} \n\n")
 ```
 
 We can also get all messages in a single conversation:
@@ -350,6 +466,13 @@ We can also get all messages in a single conversation:
 all_messages = conversation.get_messages()
 for msg in all_messages:
     print(f"Message ID: {msg.id}, Created: {msg.created_at}")
+```
+
+#### Deleting a Conversation
+
+```python
+# Delete a conversation
+client.conversations.delete(conversation_id="conversation_id_here")
 ```
 
 #### Asynchronous Conversation Operations
@@ -380,7 +503,7 @@ messages = asyncio.run(conversation_example())
 
 > 💡 **Tip**
 >
-> Notice the extra `a` in the methods above for **async**.
+> Asynchronous methods are prefixed with `a` (like `add_message`, `arefresh`, `aget_messages`), making it easy to identify them.
 
 #### Available Conversation Tools
 
@@ -423,7 +546,7 @@ kb_qa_tool = KnowledgeBaseQaTool(
 # Workflow execution tool
 workflow_tool = WorkflowTool(
     enabled=True,
-    workflow_id="workflow_uuid_here",
+    workflow={"id": "your_workflow_id", "name": "Workflow Name", "description": "Workflow Description"},
     name="Data Analysis Workflow",
     description="Run the data analysis workflow on provided input"
 )
@@ -436,12 +559,44 @@ settings = ConversationSettings(
     tools=[web_tool, noxus_qa_tool, kb_selector_tool, kb_qa_tool, workflow_tool],
     extra_instructions="Use the most appropriate tool for each query."
 )
+
+conversation = client.conversations.create(name="Tooljacked Conversation", settings=settings)
 ```
 
 ### Agents (also known as Co-workers)
 
-Agents are autonomous AI assistants that can perform tasks with specific configurations.
+Agents (Co-Workers) are autonomous AI assistants that can perform tasks with specific configurations.
 Agents use the same tools as conversations:
+
+#### Creating an Agent
+
+```python
+from noxus_sdk.resources.conversations import WebResearchTool
+from noxus_sdk.resources.conversations import WorkflowTool
+from noxus_sdk.resources.conversations import ConversationSettings
+
+# Workflow execution tool
+workflow_tool = WorkflowTool(
+    enabled=True,
+    workflow={"id": "workflow_id", "name":"name for workflow", "description": "description for workflow"},
+    name="Name for workflow",
+    description="Description for workflow"
+)
+
+
+# Define agent settings
+agent_settings = ConversationSettings(
+    model_selection=["gpt-4o-mini"],
+    temperature=0.7,
+    max_tokens=150,
+    tools=[workflow_tool],
+    extra_instructions="Please be helpful and concise."
+)
+
+# Create a new agent
+agent = client.agents.create(name="Example Agent", settings=agent_settings)
+print(f"Created Agent with ID: {agent.id}, and name: {agent.name}")
+```
 
 #### Listing Agents
 
@@ -453,32 +608,6 @@ for agent in agents:
 
 # Get a specific agent
 agent = client.agents.get(agent_id="agent_id_here")
-```
-
-#### Creating an Agent
-
-```python
-from noxus_sdk.resources.conversations import WebResearchTool
-from noxus_sdk.resources.assistants import AgentSettings
-
-# Define agent tool
-tool = WebResearchTool(
-    enabled=True,
-    extra_instructions="Focus on academic sources"
-)
-
-# Define agent settings
-agent_settings = AgentSettings(
-    model_selection=["gpt-4o-mini"],
-    temperature=0.7,
-    max_tokens=150,
-    tools=[tool],
-    extra_instructions="Please be helpful and concise."
-)
-
-# Create a new agent
-agent = client.agents.create(name="Example Agent", settings=agent_settings)
-print(f"Created Agent ID: {agent.id}")
 ```
 
 #### Updating and Deleting an Agent
@@ -509,7 +638,7 @@ You can start a conversation with an agent using the `agent_id` parameter in the
 
 ```python
 # Get the agent you want to chat with
-agent = client.agents.get(agent_id="agent_id_here")
+agent = client.agents.get(agent_id="agent_id")
 
 # Create a conversation with this agent
 conversation = client.conversations.create(
@@ -518,7 +647,12 @@ conversation = client.conversations.create(
 )
 
 # Now you can send messages to the conversation
-message = MessageRequest(content="Hello, can you help me with something?")
+message = MessageRequest(content="Hello, what model are you using?")
+response = conversation.add_message(message)
+print(f"Agent Response: {response.message_parts}")
+
+# You can ask it to run a workflow. Assume we add provided the agent with the Simple Workflow created above
+message = MessageRequest(content="Hello, can you run Simple Workflow and tell it to tell a joke?")
 response = conversation.add_message(message)
 print(f"Agent Response: {response.message_parts}")
 ```
@@ -527,7 +661,7 @@ You can also create a conversation with the agent asynchronously
 
 ```python
 async def create_agent_conversation():
-    agent = await client.agents.aget(agent_id="agent_id_here")
+    agent = await client.agents.aget(agent_id="agent_id")
     conversation = await client.conversations.acreate(
         name="Async Agent Chat",
         agent_id=agent.id
@@ -537,71 +671,7 @@ async def create_agent_conversation():
 
 > 💡 **Tip**
 >
-> When providing an `agent_id` to a conversation, you don't need to provide settings. With this approach, the agent's settings, tools, and capabilities are automatically applied to the conversation without needing to specify them manually
-
-### Knowledge Bases
-
-Knowledge bases allow you to store and retrieve information that the AI can use to enhance its responses:
-
-#### Listing Knowledge Bases
-
-```python
-# List all knowledge bases
-knowledge_bases = client.knowledge_bases.list(page=1, page_size=10)
-for kb in knowledge_bases:
-    print(f"Knowledge Base ID: {kb.id}, Name: {kb.name}")
-
-# Get a specific knowledge base
-kb = client.knowledge_bases.get(knowledge_base_id="kb_id_here")
-```
-
-#### Creating a Knowledge Base
-
-```python
-from noxus_sdk.resources.knowledge_bases import (
-    KnowledgeBaseSettings,
-    KnowledgeBaseIngestion,
-    KnowledgeBaseRetrieval,
-    KnowledgeBaseHybridSettings
-)
-
-# Define knowledge base components
-ingestion = KnowledgeBaseIngestion(
-    batch_size=10,
-    default_chunk_size=1000,
-    default_chunk_overlap=200,
-    enrich_chunks_mode="inject_summary",
-    enrich_pre_made_qa=True,
-    methods={}
-)
-
-hybrid_settings = KnowledgeBaseHybridSettings(fts_weight=0.5)
-
-retrieval = KnowledgeBaseRetrieval(
-    type="hybrid_reranking",
-    hybrid_settings=hybrid_settings.model_dump(),
-    reranker_settings={}
-)
-
-# Define complete knowledge base settings
-kb_settings = KnowledgeBaseSettings(
-    allowed_sources=["Document", "Google Drive", "OneDrive"],
-    ingestion=ingestion,
-    retrieval=retrieval,
-    embeddings={}
-)
-
-# Create a new knowledge base
-knowledge_base = client.knowledge_bases.create(
-    name="Example Knowledge Base",
-    description="A sample knowledge base",
-    document_types=["article", "report"],
-    settings_=kb_settings
-)
-print(f"Created Knowledge Base ID: {knowledge_base.id}")
-```
-
-The ingestion settings control how documents are processed, while the retrieval settings determine how information is retrieved from the knowledge base.
+> When providing an `agent_id` to a **Conversation**, you don't need to provide settings. With this approach, the agent's settings, tools, and capabilities are automatically applied to the conversation without needing to specify them manually
 
 ## Advanced Usage
 
@@ -624,17 +694,11 @@ async def main():
         print(workflow.name)
 
     # Create and run a knowledge base asynchronously
-    kb_settings = KnowledgeBaseSettings(
-        allowed_sources=["pdf"],
-        ingestion={},
-        retrieval={},
-        embeddings={}
-    )
     kb = await client.knowledge_bases.acreate(
         name="Async KB",
         description="Created asynchronously",
         document_types=["report"],
-        settings_=kb_settings
+        settings_=kb_settings # Using a settings object like defined above
     )
 
     # Run a workflow and wait for completion asynchronously
