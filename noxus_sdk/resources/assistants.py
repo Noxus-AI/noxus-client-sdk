@@ -9,6 +9,7 @@ from noxus_sdk.resources.conversations import (
     KnowledgeBaseSelectorTool,
     NoxusQaTool,
     WebResearchTool,
+    KnowledgeBaseInfo,
 )
 from pydantic import ConfigDict
 

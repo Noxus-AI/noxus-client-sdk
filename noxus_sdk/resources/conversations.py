@@ -1,4 +1,6 @@
-from datetime import datetime
+from __future__ import annotations
+
+from datetime import datetime  # noqa: TCH003
 from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
@@ -53,12 +55,18 @@ class KnowledgeBaseQaTool(ConversationTool):
     type: Literal["kb_qa"] = "kb_qa"
     name: str = "Knowledge Base Q&A"
     description: str = "Answer questions about the knowledge base"
-    kb_id: str | None = None
+    knowledge_base: KnowledgeBaseInfo
 
 
 class WorkflowInfo(BaseModel):
     id: str
-    name: str
+    name: str = ""
+    description: str | None = None
+
+
+class KnowledgeBaseInfo(BaseModel):
+    id: str
+    name: str = ""
     description: str | None = None
 
 
@@ -131,13 +139,13 @@ class Conversation(BaseResource):
     etag: str | None = None
     messages: list[Message] = []
 
-    def refresh(self) -> "Conversation":
+    def refresh(self) -> Conversation:
         response = self.client.get(f"/v1/conversations/{self.id}")
         for key, value in response.items():
             setattr(self, key, value)
         return self
 
-    async def arefresh(self) -> "Conversation":
+    async def arefresh(self) -> Conversation:
         response = await self.client.aget(f"/v1/conversations/{self.id}")
         for key, value in response.items():
             setattr(self, key, value)
@@ -151,7 +159,7 @@ class Conversation(BaseResource):
         response = self.refresh()
         return [Message.model_validate(msg) for msg in response.messages]
 
-    async def aadd_message(self, message: MessageRequest) -> "Conversation":
+    async def aadd_message(self, message: MessageRequest) -> Conversation:
         response = await self.client.apost(
             f"/v1/conversations/{self.id}",
             body=message.model_dump(),
@@ -161,7 +169,7 @@ class Conversation(BaseResource):
             setattr(self, key, value)
         return self
 
-    def add_message(self, message: MessageRequest) -> "Message":
+    def add_message(self, message: MessageRequest) -> Message:
         response = self.client.post(
             f"/v1/conversations/{self.id}",
             body=message.model_dump(),
