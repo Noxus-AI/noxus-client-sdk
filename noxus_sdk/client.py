@@ -248,7 +248,7 @@ class Client(Requester):
         self.conversations = ConversationService(self)
         self.knowledge_bases = KnowledgeBaseService(self)
         self.runs = RunService(self)
-        self.admin = AdminService(self, enabled=True if not load_me else False)
+        self.admin = AdminService(self, enabled=bool(not load_me))
         if load_me:
             self.admin.enabled = self.admin.get_me().tenant_admin
 
