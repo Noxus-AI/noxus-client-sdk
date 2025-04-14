@@ -49,14 +49,18 @@ class AdminService(BaseService[Workspace]):
             response = self.client.get("/v1/admin/me")
             return ApiKey(client=self.client, **response)
         except Exception:
-            return ApiKey(client=self.client, id="", name="", tenant_admin=False)
+            return ApiKey(
+                client=self.client, id="", name="", tenant_admin=False, value=""
+            )
 
     async def aget_me(self) -> ApiKey:
         try:
             response = await self.client.aget("/v1/admin/me")
             return ApiKey(client=self.client, **response)
         except Exception:
-            return ApiKey(client=self.client, id="", name="", tenant_admin=False)
+            return ApiKey(
+                client=self.client, id="", name="", tenant_admin=False, value=""
+            )
 
     async def alist_workspaces(self) -> list[Workspace]:
         if not self.enabled:
