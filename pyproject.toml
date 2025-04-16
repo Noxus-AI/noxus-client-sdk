@@ -22,6 +22,7 @@ test = [
     "pytest-subtests==0.13.1",
     "pytest-asyncio==0.24.0",
     "pytest-cov>=6.0.0",
+    "filelock",
 ]
 dev = [
     "hatch>=1.14.0",
@@ -64,6 +65,12 @@ exclude = ["tests/**"]
 "examples/**" = ["T201"]
 
 
+[tool.hatch.envs.mypy]
+dependencies = [
+  "mypy==1.15.0",
+  "types-aiofiles",
+]
+
 [tool.hatch.envs.test]
 python = "3.10"
 dependencies = [
@@ -71,11 +78,21 @@ dependencies = [
   "pytest-asyncio>=0.21.0",
   "pytest-cov>=4.1.0",
   "pytest-mock>=3.10.0",
+  "filelock",
 ]
 
 [tool.hatch.envs.test.scripts]
 test = "pytest {args}"
 test-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml {args}"
+
+[tool.hatch.envs.hatch-test]
+dependencies = [
+    "pytest>=8.3.3",
+    "pytest-subtests==0.13.1",
+    "pytest-asyncio==0.24.0",
+    "pytest-cov>=6.0.0",
+    "filelock",
+]
 
 [tool.coverage.report]
 exclude_lines = [

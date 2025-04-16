@@ -56,10 +56,15 @@ async def test_list_conversations(
     conv2 = await client.conversations.acreate(
         name="Test Conv 2", settings=conversation_settings
     )
+    conversations = await client.conversations.alist()
+    assert len(conversations) == 0
+
+    await conv1.aadd_message(MessageRequest(content="Hello, world!"))
+    await conv2.aadd_message(MessageRequest(content="Hello, world!"))
 
     try:
         conversations = await client.conversations.alist()
-        assert len(conversations) >= 2
+        assert len(conversations) == 2
 
         # Test pagination
         page1 = await client.conversations.alist()
