@@ -1,5 +1,6 @@
 name: ci
 on:
+  merge_group:
   push:
     branches:
       - master
