@@ -1,5 +1,6 @@
 import asyncio
 from pathlib import Path
+import time
 
 import pytest
 from noxus_sdk.resources.knowledge_bases import (
@@ -146,11 +147,20 @@ async def test_kb_training(client: Client, test_file: Path):
         document_types=["text"],
         settings_=settings,
     )
+    assert kb.status == "created"
+    await kb.arefresh()
+    assert kb.status == "created"
     # assert await wait_for_documents(kb, 1)
     await kb.aupload_document([test_file], prefix="/test1")
-    await kb.arefresh()
-    assert kb.status in ["training", "created"]
+    while kb.status not in ["training", "error"]:
+        await kb.arefresh()
+    assert kb.status in ["training"]
 
+    trained_docs = await kb.alist_documents(status="trained")
+    timeout = time.time() + 60  # 60s timeout
+    while len(trained_docs) == 0 and timeout - time.time() > 0:
+        trained_docs = await kb.alist_documents(status="trained")
+        await asyncio.sleep(0.5)
     training_docs = await kb.alist_documents(status="training")
     uploaded_docs = await kb.alist_documents(status="uploaded")
-    assert len(training_docs) + len(uploaded_docs) == 1
+    assert len(trained_docs) + len(training_docs) + len(uploaded_docs) == 1

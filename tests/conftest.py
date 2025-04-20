@@ -1,3 +1,4 @@
+import uuid
 import os
 import tempfile
 from pathlib import Path
@@ -8,6 +9,7 @@ from noxus_sdk.resources.knowledge_bases import (
     KnowledgeBaseRetrieval,
     KnowledgeBaseSettings,
 )
+from filelock import FileLock
 
 
 @pytest.fixture
@@ -15,9 +17,33 @@ def anyio_backend():
     return "asyncio"
 
 
-@pytest.fixture
-def api_key():
-    return os.environ.get("NOXUS_API_KEY", "")
+@pytest.fixture(scope="session")
+def workspace_client():
+    client = Client(
+        os.environ.get("NOXUS_API_KEY", ""),
+        base_url=os.environ.get("NOXUS_BASE_URL", "https://backend.noxus.ai"),
+    )
+
+    fn = Path(".workspace_lock")
+    with FileLock(str(fn) + ".lock") as lock:
+        if fn.is_file():
+            pass
+        else:
+            for workspace in client.admin.list_workspaces():
+                if workspace.name.startswith("sdk-"):
+                    print("Deleting", workspace.name)
+                    workspace.delete()
+            fn.touch()
+
+    yield client
+
+
+@pytest.fixture(scope="function")
+def api_key(workspace_client: Client):
+    workspace = workspace_client.admin.create_workspace(f"sdk-{uuid.uuid4()}")
+    api_key = workspace.add_api_key("test_key")
+    yield api_key.value
+    workspace.delete()
 
 
 @pytest.fixture
@@ -72,38 +98,3 @@ async def kb(client: Client, test_file: Path):
         await kb.adelete()
     except Exception:
         pass
-
-
-@pytest.fixture(autouse=True)
-async def cleanup_resources(client: Client):
-    yield
-
-    # Clean up knowledge bases
-    kbs = await client.knowledge_bases.alist()
-    for kb in kbs:
-        try:
-            await kb.adelete()
-        except Exception:
-            pass
-
-    # Clean up agents
-    agents = await client.agents.alist()
-    for agent in agents:
-        try:
-            await client.agents.adelete(agent.id)
-        except Exception:
-            pass
-
-    conversations = await client.conversations.alist()
-    for conversation in conversations:
-        try:
-            await client.conversations.adelete(conversation.id)
-        except Exception:
-            pass
-
-    workflows = await client.workflows.alist()
-    for workflow in workflows:
-        try:
-            await client.workflows.adelete(workflow.id)
-        except Exception:
-            pass

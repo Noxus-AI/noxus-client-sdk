@@ -152,10 +152,9 @@ class Requester:
                 json=json,
                 files=files,
                 params=params,
-                timeout=timeout or 10,
+                timeout=timeout or 30,
             )
             if response.status_code == 429:
-                ratelimited = True
                 time.sleep(1)
                 continue
             ratelimited = False

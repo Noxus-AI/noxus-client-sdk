@@ -77,7 +77,7 @@ class AdminService(BaseService[Workspace]):
             raise ValueError(
                 "Admin service is disabled because client was not initialized with an admin API key"
             )
-        response = self.client.pget(
+        response = self.client.get(
             f"/v1/admin/groups",
         )
         return [Workspace(client=self.client, **group) for group in response]

@@ -1,5 +1,6 @@
 name: ci
 on:
+  merge_group:
   push:
     branches:
       - master
@@ -25,6 +26,10 @@ jobs:
           pip install hatch
       - name: Format code
         run: hatch fmt --check
+
+      - name: Mypy
+        run: hatch run mypy:mypy noxus_sdk
+
       - name: Test code
         run: hatch run test:test-cov
         env:

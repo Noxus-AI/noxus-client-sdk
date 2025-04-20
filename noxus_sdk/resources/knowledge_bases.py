@@ -180,7 +180,7 @@ class KnowledgeBase(BaseResource):
     def get_runs(
         self, status: RunStatus | None = None, run_ids: str | None = None
     ) -> builtins.list[Run]:
-        params = {}
+        params: dict[str, str] = {}
         if status:
             params["status"] = status
         if run_ids:
@@ -192,7 +192,7 @@ class KnowledgeBase(BaseResource):
     async def aget_runs(
         self, status: RunStatus | None = None, run_ids: str | None = None
     ) -> builtins.list[Run]:
-        params = {}
+        params: dict[str, str] = {}
         if status:
             params["status"] = status
         if run_ids:
@@ -397,7 +397,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         status: RunStatus | None = None,
         run_ids: str | None = None,
     ) -> builtins.list[Run]:
-        params = {}
+        params: dict[str, str] = {}
         if status:
             params["status"] = status
         if run_ids:
@@ -414,7 +414,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         status: RunStatus | None = None,
         run_ids: str | None = None,
     ) -> builtins.list[Run]:
-        params = {}
+        params: dict[str, str] = {}
         if status:
             params["status"] = status
         if run_ids:
