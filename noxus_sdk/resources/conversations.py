@@ -18,8 +18,6 @@ from noxus_sdk.resources.base import BaseResource, BaseService
 
 class ConversationTool(BaseModel):
     type: str
-    name: str
-    description: str
     enabled: bool = True
     extra_instructions: str | None = None
 
@@ -28,24 +26,18 @@ class WebResearchTool(ConversationTool):
     """Tool that allows the user to search the web for information"""
 
     type: Literal["web_research"] = "web_research"
-    name: str = "Web Research"
-    description: str = "Search the web for information"
 
 
 class NoxusQaTool(ConversationTool):
     """Tool that allows the user to answer questions about the Noxus platform"""
 
     type: Literal["noxus_qa"] = "noxus_qa"
-    name: str = "Noxus Q&A"
-    description: str = "Answer questions about the Noxus platform"
 
 
 class KnowledgeBaseSelectorTool(ConversationTool):
     """Tool that allows the user to select a knowledge base to answer questions about"""
 
     type: Literal["kb_selector"] = "kb_selector"
-    name: str = "Select Knowledge Base Q&A"
-    description: str = "Select a knowledge base to answer questions about"
     kb_id: str | None = None
 
 
@@ -53,30 +45,14 @@ class KnowledgeBaseQaTool(ConversationTool):
     """Tool that allows the user to answer questions about a specific pre-selected knowledge base"""
 
     type: Literal["kb_qa"] = "kb_qa"
-    name: str = "Knowledge Base Q&A"
-    description: str = "Answer questions about the knowledge base"
-    knowledge_base: KnowledgeBaseInfo
-
-
-class WorkflowInfo(BaseModel):
-    id: str
-    name: str = ""
-    description: str | None = None
-
-
-class KnowledgeBaseInfo(BaseModel):
-    id: str
-    name: str = ""
-    description: str | None = None
+    kb_id: str
 
 
 class WorkflowTool(ConversationTool):
     """Tool that allows the user to run a workflow"""
 
     type: Literal["workflow"] = "workflow"
-    name: str = "Workflow Runner"
-    description: str = "Run a workflow"
-    workflow: WorkflowInfo
+    workflow_id: str
 
 
 AnyToolSettings = Annotated[

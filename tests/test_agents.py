@@ -7,13 +7,11 @@ from noxus_sdk.resources.conversations import (
 )
 from noxus_sdk.resources.assistants import (
     AgentSettings,
-    WorkflowInfo,
     WorkflowTool,
     KnowledgeBaseSelectorTool,
     NoxusQaTool,
     WebResearchTool,
     KnowledgeBaseQaTool,
-    KnowledgeBaseInfo,
 )
 from noxus_sdk.resources.workflows import (
     WorkflowDefinition,
@@ -126,9 +124,7 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
             temperature=0.5,
             tools=[
                 WorkflowTool(
-                    workflow=WorkflowInfo(
-                        id=created_workflow.id, name=created_workflow.name
-                    )
+                    workflow_id=created_workflow.id
                 )
             ],
             max_tokens=200,
@@ -146,7 +142,7 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         assert updated.definition.extra_instructions == "Updated instructions"
         assert len(updated.definition.tools) == 1
         assert updated.definition.tools[0].type == "workflow"
-        assert updated.definition.tools[0].workflow.id == created_workflow.id
+        assert updated.definition.tools[0].workflow_id == created_workflow.id
 
         # Test instance update method with real KB
         instance_updated = await client.agents.aget(agent.id)
@@ -248,12 +244,10 @@ async def test_agent_with_all_tool_types(client: Client):
             NoxusQaTool(),
             KnowledgeBaseSelectorTool(),
             KnowledgeBaseQaTool(
-                knowledge_base=KnowledgeBaseInfo(id=test_kb.id, name=test_kb.name)
+                kb_id=test_kb.id
             ),
             WorkflowTool(
-                workflow=WorkflowInfo(
-                    id=created_workflow.id, name=created_workflow.name
-                )
+                workflow_id=created_workflow.id,
             ),
         ],
         max_tokens=150,
@@ -277,7 +271,7 @@ async def test_agent_with_all_tool_types(client: Client):
         workflow_tool = next(
             tool for tool in agent.definition.tools if tool.type == "workflow"
         )
-        assert workflow_tool.workflow.id == created_workflow.id
+        assert workflow_tool.workflow_id == created_workflow.id
 
     finally:
         await client.agents.adelete(agent.id)

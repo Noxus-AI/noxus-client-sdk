@@ -4,12 +4,10 @@ from noxus_sdk.resources.base import BaseResource, BaseService
 from noxus_sdk.resources.conversations import (
     ConversationSettings,
     WorkflowTool,
-    WorkflowInfo,
     KnowledgeBaseQaTool,
     KnowledgeBaseSelectorTool,
     NoxusQaTool,
     WebResearchTool,
-    KnowledgeBaseInfo,
 )
 from pydantic import ConfigDict
 
