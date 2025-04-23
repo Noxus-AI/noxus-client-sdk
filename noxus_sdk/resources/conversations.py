@@ -33,6 +33,11 @@ class NoxusQaTool(ConversationTool):
 
     type: Literal["noxus_qa"] = "noxus_qa"
 
+class AttachFileTool(ConversationTool):
+    """Tool that allows attaching files to a conversation"""
+
+    type: Literal["attach_file"] = "attach_file"
+
 
 class KnowledgeBaseSelectorTool(ConversationTool):
     """Tool that allows the user to select a knowledge base to answer questions about"""
@@ -60,7 +65,8 @@ AnyToolSettings = Annotated[
     | NoxusQaTool
     | KnowledgeBaseSelectorTool
     | KnowledgeBaseQaTool
-    | WorkflowTool,
+    | WorkflowTool
+    | AttachFileTool,
     Discriminator("type"),
 ]
 
