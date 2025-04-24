@@ -186,6 +186,8 @@ class Node(BaseModel):
     node_config: dict = {}
     connector_config: dict = {}
     config_definition: dict[str, ConfigDefinition] = {}
+    subflow_config: dict | None = None
+    subflow_id: str | None = None
     inputs: list[NodeInput] = []
     outputs: list[NodeOutput] = []
 
