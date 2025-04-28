@@ -126,16 +126,20 @@ class Conversation(BaseResource):
         default=None, validation_alias=AliasChoices("assistant_id", "agent_id")
     )
 
+    def _update_w_response(self, response: dict) -> None:
+        for key, value in response.items():
+            if key == "assistant_id":
+                key = "agent_id"  # noqa: PLW2901
+            setattr(self, key, value)
+
     def refresh(self) -> Conversation:
         response = self.client.get(f"/v1/conversations/{self.id}")
-        for key, value in response.items():
-            setattr(self, key, value)
+        self._update_w_response(response)
         return self
 
     async def arefresh(self) -> Conversation:
         response = await self.client.aget(f"/v1/conversations/{self.id}")
-        for key, value in response.items():
-            setattr(self, key, value)
+        self._update_w_response(response)
         return self
 
     async def aget_messages(self) -> list[Message]:
@@ -152,8 +156,7 @@ class Conversation(BaseResource):
             body=message.model_dump(),
             timeout=30,
         )
-        for key, value in response.items():
-            setattr(self, key, value)
+        self._update_w_response(response)
         return self
 
     def add_message(self, message: MessageRequest) -> Message:
@@ -162,8 +165,7 @@ class Conversation(BaseResource):
             body=message.model_dump(),
             timeout=30,
         )
-        for key, value in response.items():
-            setattr(self, key, value)
+        self._update_w_response(response)
 
         if len(self.messages) == 0:
             raise ValueError("No response from the server")
