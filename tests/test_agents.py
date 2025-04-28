@@ -122,11 +122,7 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         new_settings = ConversationSettings(
             model_selection=["gpt-4o"],
             temperature=0.5,
-            tools=[
-                WorkflowTool(
-                    workflow_id=created_workflow.id
-                )
-            ],
+            tools=[WorkflowTool(workflow_id=created_workflow.id)],
             max_tokens=200,
             extra_instructions="Updated instructions",
         )
@@ -243,9 +239,7 @@ async def test_agent_with_all_tool_types(client: Client):
             WebResearchTool(),
             NoxusQaTool(),
             KnowledgeBaseSelectorTool(),
-            KnowledgeBaseQaTool(
-                kb_id=test_kb.id
-            ),
+            KnowledgeBaseQaTool(kb_id=test_kb.id),
             WorkflowTool(
                 workflow_id=created_workflow.id,
             ),
