@@ -68,21 +68,32 @@ class AgentService(BaseService[Agent]):
         return Agent(client=self.client, **result)
 
     def update(
-        self, agent_id: str, name: str, settings: AgentSettings, preview: bool = False
+        self,
+        agent_id: str,
+        name: str | None = None,
+        settings: AgentSettings | None = None,
+        preview: bool = False,
     ) -> Agent:
         result = self.client.patch(
             f"/v1/agents/{agent_id}",
-            {"name": name, "definition": settings.model_dump()},
+            {"name": name, "definition": settings.model_dump() if settings else None},
             params={"preview": preview},
         )
         return Agent(client=self.client, **result)
 
     async def aupdate(
-        self, agent_id: str, name: str, settings: AgentSettings, preview: bool = False
+        self,
+        agent_id: str,
+        name: str | None = None,
+        settings: AgentSettings | None = None,
+        preview: bool = False,
     ) -> Agent:
         result = await self.client.apatch(
             f"/v1/agents/{agent_id}",
-            {"name": name, "definition": settings.model_dump()},
+            {
+                "name": name,
+                "definition": settings.model_dump() if settings else None,
+            },
             params={"preview": preview},
         )
         return Agent(client=self.client, **result)

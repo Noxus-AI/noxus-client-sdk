@@ -45,7 +45,6 @@ class KnowledgeBaseSelectorTool(ConversationTool):
     """Tool that allows the user to select a knowledge base to answer questions about"""
 
     type: Literal["kb_selector"] = "kb_selector"
-    kb_id: str | None = None
 
 
 class KnowledgeBaseQaTool(ConversationTool):

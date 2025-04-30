@@ -1,27 +1,28 @@
-import pytest
-import httpx
 from uuid import uuid4
+
+import httpx
+import pytest
+from noxus_sdk.client import Client
+from noxus_sdk.resources.assistants import (
+    AgentSettings,
+    KnowledgeBaseQaTool,
+    KnowledgeBaseSelectorTool,
+    NoxusQaTool,
+    WebResearchTool,
+    WorkflowTool,
+)
 from noxus_sdk.resources.conversations import (
     ConversationSettings,
     MessageRequest,
 )
-from noxus_sdk.resources.assistants import (
-    AgentSettings,
-    WorkflowTool,
-    KnowledgeBaseSelectorTool,
-    NoxusQaTool,
-    WebResearchTool,
-    KnowledgeBaseQaTool,
+from noxus_sdk.resources.knowledge_bases import (
+    KnowledgeBaseIngestion,
+    KnowledgeBaseRetrieval,
+    KnowledgeBaseSettings,
 )
 from noxus_sdk.resources.workflows import (
     WorkflowDefinition,
 )
-from noxus_sdk.resources.knowledge_bases import (
-    KnowledgeBaseSettings,
-    KnowledgeBaseIngestion,
-    KnowledgeBaseRetrieval,
-)
-from noxus_sdk.client import Client
 
 
 @pytest.fixture
@@ -158,7 +159,10 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         assert result.definition.max_tokens == 300
         assert len(result.definition.tools) == 1
         assert result.definition.tools[0].type == "kb_selector"
-
+    except httpx.HTTPStatusError as e:
+        # print the reason why 422
+        print(e.response.text)
+        raise e
     finally:
         await client.agents.adelete(agent.id)
         await test_kb.adelete()
