@@ -1,15 +1,16 @@
-import uuid
 import os
 import tempfile
+import uuid
 from pathlib import Path
+
 import pytest
+from filelock import FileLock
 from noxus_sdk.client import Client
 from noxus_sdk.resources.knowledge_bases import (
     KnowledgeBaseIngestion,
     KnowledgeBaseRetrieval,
     KnowledgeBaseSettings,
 )
-from filelock import FileLock
 
 
 @pytest.fixture
@@ -55,14 +56,13 @@ def client(api_key: str):
 
 @pytest.fixture
 async def test_file():
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-        f.write("Test content for document upload")
-        path = Path(f.name)
+    f = Path("test_file.txt")
+    f.write_text("Test content for document upload")
 
-    yield path
+    yield f
 
     try:
-        os.unlink(path)
+        f.unlink()
     except Exception:
         pass
 

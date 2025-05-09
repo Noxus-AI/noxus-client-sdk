@@ -1,4 +1,6 @@
+import asyncio
 import base64
+from pathlib import Path
 from uuid import uuid4
 
 import httpx
@@ -104,7 +106,7 @@ async def test_conversation_messages(
 
 
 @pytest.mark.anyio
-async def test_conversation_with_kb(client: Client, kb: KnowledgeBase):
+async def test_conversation_with_kb(client: Client, kb: KnowledgeBase, test_file: Path):
     conversation_settings = ConversationSettings(
         model_selection=["gpt-4o"], temperature=0.7, tools=[KnowledgeBaseSelectorTool()]
     )
@@ -112,6 +114,8 @@ async def test_conversation_with_kb(client: Client, kb: KnowledgeBase):
     conversation = await client.conversations.acreate(
         name="Test With KB", settings=conversation_settings
     )
+    await kb.aupload_document([test_file], prefix="/test1")
+    await asyncio.sleep(1)
 
     try:
         message = MessageRequest(
@@ -128,6 +132,8 @@ async def test_conversation_with_kb(client: Client, kb: KnowledgeBase):
         ), messages
     finally:
         await client.conversations.adelete(conversation.id)
+        await kb.arefresh()
+        await kb.adelete_document(kb.documents[0].id)
 
 
 @pytest.mark.anyio
