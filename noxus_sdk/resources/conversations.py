@@ -121,6 +121,7 @@ class Conversation(BaseResource):
     settings: ConversationSettings
     etag: str | None = None
     messages: list[Message] = []
+    status: str
     agent_id: str | None = Field(
         default=None, validation_alias=AliasChoices("assistant_id", "agent_id")
     )
