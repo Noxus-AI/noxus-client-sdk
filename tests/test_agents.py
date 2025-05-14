@@ -1,29 +1,28 @@
-import pytest
-import httpx
 from uuid import uuid4
+
+import httpx
+import pytest
+from noxus_sdk.client import Client
+from noxus_sdk.resources.assistants import (
+    AgentSettings,
+    KnowledgeBaseQaTool,
+    KnowledgeBaseSelectorTool,
+    NoxusQaTool,
+    WebResearchTool,
+    WorkflowTool,
+)
 from noxus_sdk.resources.conversations import (
     ConversationSettings,
     MessageRequest,
 )
-from noxus_sdk.resources.assistants import (
-    AgentSettings,
-    WorkflowInfo,
-    WorkflowTool,
-    KnowledgeBaseSelectorTool,
-    NoxusQaTool,
-    WebResearchTool,
-    KnowledgeBaseQaTool,
-    KnowledgeBaseInfo,
+from noxus_sdk.resources.knowledge_bases import (
+    KnowledgeBaseIngestion,
+    KnowledgeBaseRetrieval,
+    KnowledgeBaseSettings,
 )
 from noxus_sdk.resources.workflows import (
     WorkflowDefinition,
 )
-from noxus_sdk.resources.knowledge_bases import (
-    KnowledgeBaseSettings,
-    KnowledgeBaseIngestion,
-    KnowledgeBaseRetrieval,
-)
-from noxus_sdk.client import Client
 
 
 @pytest.fixture
@@ -124,13 +123,7 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         new_settings = ConversationSettings(
             model_selection=["gpt-4o"],
             temperature=0.5,
-            tools=[
-                WorkflowTool(
-                    workflow=WorkflowInfo(
-                        id=created_workflow.id, name=created_workflow.name
-                    )
-                )
-            ],
+            tools=[WorkflowTool(workflow_id=created_workflow.id)],
             max_tokens=200,
             extra_instructions="Updated instructions",
         )
@@ -146,7 +139,7 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         assert updated.definition.extra_instructions == "Updated instructions"
         assert len(updated.definition.tools) == 1
         assert updated.definition.tools[0].type == "workflow"
-        assert updated.definition.tools[0].workflow.id == created_workflow.id
+        assert updated.definition.tools[0].workflow_id == created_workflow.id
 
         # Test instance update method with real KB
         instance_updated = await client.agents.aget(agent.id)
@@ -166,7 +159,10 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         assert result.definition.max_tokens == 300
         assert len(result.definition.tools) == 1
         assert result.definition.tools[0].type == "kb_selector"
-
+    except httpx.HTTPStatusError as e:
+        # print the reason why 422
+        print(e.response.text)
+        raise e
     finally:
         await client.agents.adelete(agent.id)
         await test_kb.adelete()
@@ -247,13 +243,9 @@ async def test_agent_with_all_tool_types(client: Client):
             WebResearchTool(),
             NoxusQaTool(),
             KnowledgeBaseSelectorTool(),
-            KnowledgeBaseQaTool(
-                knowledge_base=KnowledgeBaseInfo(id=test_kb.id, name=test_kb.name)
-            ),
+            KnowledgeBaseQaTool(kb_id=test_kb.id),
             WorkflowTool(
-                workflow=WorkflowInfo(
-                    id=created_workflow.id, name=created_workflow.name
-                )
+                workflow_id=created_workflow.id,
             ),
         ],
         max_tokens=150,
@@ -277,7 +269,7 @@ async def test_agent_with_all_tool_types(client: Client):
         workflow_tool = next(
             tool for tool in agent.definition.tools if tool.type == "workflow"
         )
-        assert workflow_tool.workflow.id == created_workflow.id
+        assert workflow_tool.workflow_id == created_workflow.id
 
     finally:
         await client.agents.adelete(agent.id)
