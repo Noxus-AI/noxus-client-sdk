@@ -1,17 +1,16 @@
 from typing import TypeAlias
 
+from pydantic import ConfigDict
+
 from noxus_sdk.resources.base import BaseResource, BaseService
 from noxus_sdk.resources.conversations import (
     ConversationSettings,
-    WorkflowTool,
-    WorkflowInfo,
     KnowledgeBaseQaTool,
     KnowledgeBaseSelectorTool,
     NoxusQaTool,
     WebResearchTool,
-    KnowledgeBaseInfo,
+    WorkflowTool,
 )
-from pydantic import ConfigDict
 
 AgentSettings: TypeAlias = ConversationSettings
 
@@ -20,12 +19,16 @@ class Agent(BaseResource):
     id: str
     name: str
     definition: AgentSettings
+    draft_definition: AgentSettings | None = None
     model_config = ConfigDict(validate_assignment=True, extra="allow")
 
-    def update(self, name: str, settings: AgentSettings) -> "Agent":
+    def update(
+        self, name: str, settings: AgentSettings, preview: bool = False
+    ) -> "Agent":
         result = self.client.patch(
             f"/v1/agents/{self.id}",
             {"name": name, "definition": settings.model_dump()},
+            params={"preview": preview},
         )
         for key, value in result.items():
             setattr(self, key, value)
@@ -64,17 +67,34 @@ class AgentService(BaseService[Agent]):
         result = await self.client.aget(f"/v1/agents/{agent_id}")
         return Agent(client=self.client, **result)
 
-    def update(self, agent_id: str, name: str, settings: AgentSettings) -> Agent:
+    def update(
+        self,
+        agent_id: str,
+        name: str | None = None,
+        settings: AgentSettings | None = None,
+        preview: bool = False,
+    ) -> Agent:
         result = self.client.patch(
             f"/v1/agents/{agent_id}",
-            {"name": name, "definition": settings.model_dump()},
+            {"name": name, "definition": settings.model_dump() if settings else None},
+            params={"preview": preview},
         )
         return Agent(client=self.client, **result)
 
-    async def aupdate(self, agent_id: str, name: str, settings: AgentSettings) -> Agent:
+    async def aupdate(
+        self,
+        agent_id: str,
+        name: str | None = None,
+        settings: AgentSettings | None = None,
+        preview: bool = False,
+    ) -> Agent:
         result = await self.client.apatch(
             f"/v1/agents/{agent_id}",
-            {"name": name, "definition": settings.model_dump()},
+            {
+                "name": name,
+                "definition": settings.model_dump() if settings else None,
+            },
+            params={"preview": preview},
         )
         return Agent(client=self.client, **result)
 
