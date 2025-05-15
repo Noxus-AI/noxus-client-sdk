@@ -2,8 +2,9 @@ import asyncio
 import builtins
 import time
 
-from noxus_sdk.resources.base import BaseResource, BaseService
 from pydantic import BaseModel, ConfigDict
+
+from noxus_sdk.resources.base import BaseResource, BaseService
 
 
 class RunFailure(Exception):
@@ -89,5 +90,7 @@ class RunService(BaseService[Run]):
         response = await self.client.apget(
             f"/v1/workflows/{workflow_id}/runs",
             params={"page": page, "page_size": page_size},
+            page=page,
+            page_size=page_size,
         )
         return [Run(client=self.client, **run) for run in response]

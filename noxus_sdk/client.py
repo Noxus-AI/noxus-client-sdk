@@ -75,7 +75,7 @@ class Requester:
     ):
         params_ = params or {}
         params_["page"] = params_.get("page", page)
-        params_["page_size"] = params_.get("page_size", page_size)
+        params_["size"] = params_.get("page_size", page_size)
 
         headers_ = {"X-API-Key": self.api_key}
         if headers:
@@ -183,7 +183,7 @@ class Requester:
     ):
         params_ = params or {}
         params_["page"] = params_.get("page", page)
-        params_["page_size"] = params_.get("page_size", page_size)
+        params_["size"] = params_.get("page_size", page_size)
 
         headers_ = {"X-API-Key": self.api_key}
         if headers:
