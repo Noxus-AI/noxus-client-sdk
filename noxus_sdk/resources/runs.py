@@ -21,6 +21,7 @@ class Run(BaseResource):
     node_ids: list[str] | None = None
     status: str
     progress: int
+    progress_details: dict | None = None
     created_at: str
     finished_at: str | None = None
     output: dict | None = None
