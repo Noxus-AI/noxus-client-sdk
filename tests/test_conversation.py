@@ -69,8 +69,8 @@ async def test_list_conversations(
         assert len(conversations) == 2
 
         # Test pagination
-        page1 = await client.conversations.alist()
-        assert len(page1) == 2
+        page1 = await client.conversations.alist(page=1, page_size=1)
+        assert len(page1) == 1
 
     finally:
         await client.conversations.adelete(conv1.id)

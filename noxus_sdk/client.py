@@ -74,8 +74,8 @@ class Requester:
         timeout: int | None = None,
     ):
         params_ = params or {}
-        params_["page"] = page
-        params_["page_size"] = page_size
+        params_["page"] = params_.get("page", page)
+        params_["size"] = params_.get("page_size", page_size)
 
         headers_ = {"X-API-Key": self.api_key}
         if headers:
@@ -182,8 +182,9 @@ class Requester:
         timeout: int | None = None,
     ):
         params_ = params or {}
-        params_["page"] = page
-        params_["page_size"] = page_size
+        params_["page"] = params_.get("page", page)
+        params_["size"] = params_.get("page_size", page_size)
+
         headers_ = {"X-API-Key": self.api_key}
         if headers:
             headers_.update(headers)

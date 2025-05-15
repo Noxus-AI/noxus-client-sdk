@@ -176,7 +176,10 @@ class Conversation(BaseResource):
 class ConversationService(BaseService[Conversation]):
     async def alist(self, page: int = 1, page_size: int = 10) -> list[Conversation]:
         conversations = await self.client.apget(
-            "/v1/conversations", params={"page": page, "page_size": page_size}
+            "/v1/conversations",
+            params={"page": page, "page_size": page_size},
+            page=page,
+            page_size=page_size,
         )
         return [
             Conversation(client=self.client, **conversation)
@@ -185,7 +188,10 @@ class ConversationService(BaseService[Conversation]):
 
     def list(self, page: int = 1, page_size: int = 10) -> list[Conversation]:
         conversations = self.client.pget(
-            "/v1/conversations", params={"page": page, "page_size": page_size}
+            "/v1/conversations",
+            params={"page": page, "page_size": page_size},
+            page=page,
+            page_size=page_size,
         )
         return [
             Conversation(client=self.client, **conversation)
