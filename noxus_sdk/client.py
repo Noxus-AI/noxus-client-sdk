@@ -1,5 +1,5 @@
-import os
 import asyncio
+import os
 import time
 from typing import Any, BinaryIO
 
@@ -74,8 +74,8 @@ class Requester:
         timeout: int | None = None,
     ):
         params_ = params or {}
-        params_["page"] = page
-        params_["page_size"] = page_size
+        params_["page"] = params_.get("page", page)
+        params_["size"] = params_.get("page_size", page_size)
 
         headers_ = {"X-API-Key": self.api_key}
         if headers:
@@ -114,9 +114,10 @@ class Requester:
         body: Any,
         headers: dict | None = None,
         timeout: int | None = None,
+        params: dict | None = None,
     ):
         return await self.arequest(
-            "PATCH", url, json=body, headers=headers, timeout=timeout
+            "PATCH", url, json=body, headers=headers, timeout=timeout, params=params
         )
 
     async def adelete(
@@ -181,8 +182,9 @@ class Requester:
         timeout: int | None = None,
     ):
         params_ = params or {}
-        params_["page"] = page
-        params_["page_size"] = page_size
+        params_["page"] = params_.get("page", page)
+        params_["size"] = params_.get("page_size", page_size)
+
         headers_ = {"X-API-Key": self.api_key}
         if headers:
             headers_.update(headers)
@@ -201,8 +203,11 @@ class Requester:
         body: Any,
         headers: dict | None = None,
         timeout: int | None = None,
+        params: dict | None = None,
     ):
-        return self.request("PATCH", url, json=body, headers=headers, timeout=timeout)
+        return self.request(
+            "PATCH", url, json=body, headers=headers, timeout=timeout, params=params
+        )
 
     def post(
         self,
@@ -241,11 +246,11 @@ class Client(Requester):
         load_me: bool = True,
         extra_headers: dict | None = None,
     ):
+        from noxus_sdk.resources.admin import AdminService
         from noxus_sdk.resources.assistants import AgentService
         from noxus_sdk.resources.conversations import ConversationService
         from noxus_sdk.resources.knowledge_bases import KnowledgeBaseService
         from noxus_sdk.resources.runs import RunService
-        from noxus_sdk.resources.admin import AdminService
         from noxus_sdk.resources.workflows import WorkflowService
         from noxus_sdk.workflows import load_node_types
 

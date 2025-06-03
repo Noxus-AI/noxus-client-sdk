@@ -318,7 +318,10 @@ class KnowledgeBase(BaseResource):
 class KnowledgeBaseService(BaseService[KnowledgeBase]):
     def list(self, page: int = 1, page_size: int = 10) -> builtins.list[KnowledgeBase]:
         knowledge_bases = self.client.pget(
-            "/v1/knowledge-bases", params={"page": page, "page_size": page_size}
+            "/v1/knowledge-bases",
+            params={"page": page, "page_size": page_size},
+            page=page,
+            page_size=page_size,
         )
         return [
             KnowledgeBase(client=self.client, **knowledge_base)
@@ -329,7 +332,10 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         self, page: int = 1, page_size: int = 10
     ) -> builtins.list[KnowledgeBase]:
         knowledge_bases = await self.client.apget(
-            "/v1/knowledge-bases", params={"page": page, "page_size": page_size}
+            "/v1/knowledge-bases",
+            params={"page": page, "page_size": page_size},
+            page=page,
+            page_size=page_size,
         )
         return [
             KnowledgeBase(client=self.client, **knowledge_base)

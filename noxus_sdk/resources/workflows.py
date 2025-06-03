@@ -1,6 +1,7 @@
+from pydantic import ConfigDict
+
 from noxus_sdk.resources.base import BaseService
 from noxus_sdk.workflows import WorkflowDefinition
-from pydantic import ConfigDict
 
 
 class WorkflowService(BaseService[WorkflowDefinition]):
@@ -10,6 +11,8 @@ class WorkflowService(BaseService[WorkflowDefinition]):
         workflows_data = await self.client.apget(
             f"/v1/workflows",
             params={"page": page, "page_size": page_size},
+            page=page,
+            page_size=page_size,
         )
         return [
             WorkflowDefinition.model_validate({"client": self.client, **data})
@@ -20,6 +23,8 @@ class WorkflowService(BaseService[WorkflowDefinition]):
         workflows_data = self.client.pget(
             f"/v1/workflows",
             params={"page": page, "page_size": page_size},
+            page=page,
+            page_size=page_size,
         )
         return [
             WorkflowDefinition.model_validate({"client": self.client, **data})

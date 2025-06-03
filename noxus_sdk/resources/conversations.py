@@ -5,12 +5,13 @@ from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
 from pydantic import (
+    AliasChoices,
     BaseModel,
+    ConfigDict,
     Discriminator,
     Field,
     ValidationError,
     model_validator,
-    ConfigDict,
 )
 
 from noxus_sdk.resources.base import BaseResource, BaseService
@@ -18,8 +19,6 @@ from noxus_sdk.resources.base import BaseResource, BaseService
 
 class ConversationTool(BaseModel):
     type: str
-    name: str
-    description: str
     enabled: bool = True
     extra_instructions: str | None = None
 
@@ -28,55 +27,38 @@ class WebResearchTool(ConversationTool):
     """Tool that allows the user to search the web for information"""
 
     type: Literal["web_research"] = "web_research"
-    name: str = "Web Research"
-    description: str = "Search the web for information"
 
 
 class NoxusQaTool(ConversationTool):
     """Tool that allows the user to answer questions about the Noxus platform"""
 
     type: Literal["noxus_qa"] = "noxus_qa"
-    name: str = "Noxus Q&A"
-    description: str = "Answer questions about the Noxus platform"
+
+
+class AttachFileTool(ConversationTool):
+    """Tool that allows attaching files to a conversation"""
+
+    type: Literal["attach_file"] = "attach_file"
 
 
 class KnowledgeBaseSelectorTool(ConversationTool):
     """Tool that allows the user to select a knowledge base to answer questions about"""
 
     type: Literal["kb_selector"] = "kb_selector"
-    name: str = "Select Knowledge Base Q&A"
-    description: str = "Select a knowledge base to answer questions about"
-    kb_id: str | None = None
 
 
 class KnowledgeBaseQaTool(ConversationTool):
     """Tool that allows the user to answer questions about a specific pre-selected knowledge base"""
 
     type: Literal["kb_qa"] = "kb_qa"
-    name: str = "Knowledge Base Q&A"
-    description: str = "Answer questions about the knowledge base"
-    knowledge_base: KnowledgeBaseInfo
-
-
-class WorkflowInfo(BaseModel):
-    id: str
-    name: str = ""
-    description: str | None = None
-
-
-class KnowledgeBaseInfo(BaseModel):
-    id: str
-    name: str = ""
-    description: str | None = None
+    kb_id: str
 
 
 class WorkflowTool(ConversationTool):
     """Tool that allows the user to run a workflow"""
 
     type: Literal["workflow"] = "workflow"
-    name: str = "Workflow Runner"
-    description: str = "Run a workflow"
-    workflow: WorkflowInfo
+    workflow_id: str
 
 
 AnyToolSettings = Annotated[
@@ -84,7 +66,8 @@ AnyToolSettings = Annotated[
     | NoxusQaTool
     | KnowledgeBaseSelectorTool
     | KnowledgeBaseQaTool
-    | WorkflowTool,
+    | WorkflowTool
+    | AttachFileTool,
     Discriminator("type"),
 ]
 
@@ -138,21 +121,26 @@ class Conversation(BaseResource):
     settings: ConversationSettings
     etag: str | None = None
     messages: list[Message] = []
-    user_id: str | None = None
-    api_key_id: str | None = None
+    status: str
+    agent_id: str | None = Field(
+        default=None, validation_alias=AliasChoices("assistant_id", "agent_id")
+    )
+
+    def _update_w_response(self, response: dict) -> None:
+        for key, value in response.items():
+            if key == "assistant_id":
+                key = "agent_id"  # noqa: PLW2901
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def refresh(self) -> Conversation:
         response = self.client.get(f"/v1/conversations/{self.id}")
-        for key, value in response.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        self._update_w_response(response)
         return self
 
     async def arefresh(self) -> Conversation:
         response = await self.client.aget(f"/v1/conversations/{self.id}")
-        for key, value in response.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        self._update_w_response(response)
         return self
 
     async def aget_messages(self) -> list[Message]:
@@ -169,9 +157,7 @@ class Conversation(BaseResource):
             body=message.model_dump(),
             timeout=30,
         )
-        for key, value in response.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        self._update_w_response(response)
         return self
 
     def add_message(self, message: MessageRequest) -> Message:
@@ -180,9 +166,7 @@ class Conversation(BaseResource):
             body=message.model_dump(),
             timeout=30,
         )
-        for key, value in response.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        self._update_w_response(response)
 
         if len(self.messages) == 0:
             raise ValueError("No response from the server")
@@ -193,7 +177,10 @@ class Conversation(BaseResource):
 class ConversationService(BaseService[Conversation]):
     async def alist(self, page: int = 1, page_size: int = 10) -> list[Conversation]:
         conversations = await self.client.apget(
-            "/v1/conversations", params={"page": page, "page_size": page_size}
+            "/v1/conversations",
+            params={"page": page, "page_size": page_size},
+            page=page,
+            page_size=page_size,
         )
         return [
             Conversation(client=self.client, **conversation)
@@ -202,7 +189,10 @@ class ConversationService(BaseService[Conversation]):
 
     def list(self, page: int = 1, page_size: int = 10) -> list[Conversation]:
         conversations = self.client.pget(
-            "/v1/conversations", params={"page": page, "page_size": page_size}
+            "/v1/conversations",
+            params={"page": page, "page_size": page_size},
+            page=page,
+            page_size=page_size,
         )
         return [
             Conversation(client=self.client, **conversation)
