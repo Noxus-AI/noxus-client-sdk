@@ -28,7 +28,8 @@ class Agent(BaseResource):
             {"name": name, "definition": settings.model_dump()},
         )
         for key, value in result.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
         return self
 
     def delete(self) -> None:

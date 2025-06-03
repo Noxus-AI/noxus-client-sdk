@@ -160,13 +160,15 @@ class KnowledgeBase(BaseResource):
     def refresh(self) -> "KnowledgeBase":
         response = self.client.get(f"/v1/knowledge-bases/{self.id}")
         for key, value in response.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
         return self
 
     async def arefresh(self) -> "KnowledgeBase":
         response = await self.client.aget(f"/v1/knowledge-bases/{self.id}")
         for key, value in response.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
         return self
 
     def delete(self) -> bool:
