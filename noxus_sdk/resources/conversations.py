@@ -130,7 +130,8 @@ class Conversation(BaseResource):
         for key, value in response.items():
             if key == "assistant_id":
                 key = "agent_id"  # noqa: PLW2901
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def refresh(self) -> Conversation:
         response = self.client.get(f"/v1/conversations/{self.id}")

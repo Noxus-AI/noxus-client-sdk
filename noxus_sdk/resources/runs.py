@@ -30,7 +30,8 @@ class Run(BaseResource):
     def refresh(self) -> "Run":
         response = self.client.get(f"/v1/workflows/{self.workflow_id}/runs/{self.id}")
         for key, value in response.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
         return self
 
     async def arefresh(self) -> "Run":
@@ -38,11 +39,12 @@ class Run(BaseResource):
             f"/v1/workflows/{self.workflow_id}/runs/{self.id}"
         )
         for key, value in response.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
         return self
 
     def wait(self, interval: int = 5, output_only: bool = False):
-        while self.status not in ["failed", "completed"]:
+        while self.status not in ["failed", "completed", "awaiting_human_feedback"]:
             time.sleep(interval)
             self.refresh()
 
@@ -54,7 +56,7 @@ class Run(BaseResource):
         return self
 
     async def a_wait(self, interval: int = 5, output_only: bool = False):
-        while self.status not in ["failed", "completed"]:
+        while self.status not in ["failed", "completed", "awaiting_human_feedback"]:
             await asyncio.sleep(interval)
             await self.arefresh()
 
