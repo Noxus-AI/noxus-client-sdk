@@ -54,6 +54,12 @@ class KnowledgeBaseQaTool(ConversationTool):
     kb_id: str
 
 
+class HumanInTheLoopTool(ConversationTool):
+    """Tool that allows the agent to escalate to human"""
+
+    type: Literal["human_in_the_loop"] = "human_in_the_loop"
+
+
 class WorkflowTool(ConversationTool):
     """Tool that allows the user to run a workflow"""
 
@@ -67,6 +73,7 @@ AnyToolSettings = Annotated[
     | KnowledgeBaseSelectorTool
     | KnowledgeBaseQaTool
     | WorkflowTool
+    | HumanInTheLoopTool
     | AttachFileTool,
     Discriminator("type"),
 ]
