@@ -53,6 +53,7 @@ class KnowledgeBaseQaTool(ConversationTool):
     type: Literal["kb_qa"] = "kb_qa"
     kb_id: str
 
+
 class HumanInTheLoopTool(ConversationTool):
     """Tool that allows the agent to escalate to human"""
 
