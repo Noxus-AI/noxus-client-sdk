@@ -191,7 +191,13 @@ class Node(BaseModel):
     inputs: list[NodeInput] = []
     outputs: list[NodeOutput] = []
 
-    def input(self, name: str | None = None, key: str | None = None) -> EdgePoint:
+    def input(
+        self,
+        name: str | None = None,
+        key: str | None = None,
+        type_definition: str | None = None,
+        type_definition_is_list: bool = False,
+    ) -> EdgePoint:
         if name is None:
             if len(self.inputs) != 1:
                 raise ValueError("Multiple inputs found, please specify a name")
@@ -200,7 +206,7 @@ class Node(BaseModel):
         if name not in i:
             raise KeyError(f"Input {name} not found (possible: {list(i.keys())})")
         input = i[name]
-        if input.type == "variable_connector":
+        if input.type in ["variable_connector", "variable_type_size_connector"]:
             if key is None:
                 raise ValueError("key is required for variable_connector")
             connector_config = self.connector_config.get("inputs")
@@ -214,10 +220,32 @@ class Node(BaseModel):
             connector_keys = connector_inputs[name].get("keys", [])
             if key not in connector_keys:
                 connector_keys.append(key)
+            if input.type == "variable_type_size_connector":
+                assert (
+                    type_definition is not None
+                ), f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                type_definitions = connector_inputs[name].get("type_definitions", {})
+                choices = connector_inputs[name].get("choices", [])
+                if key not in type_definitions:
+                    typedef = {
+                        "data_type": type_definition,
+                        "is_list": type_definition_is_list,
+                    }
+                    type_definitions[key] = typedef
+                    if type_definition not in [c["data_type"] for c in choices]:
+                        choices.append(typedef)
+                    connector_inputs[name]["choices"] = choices
+                    connector_inputs[name]["type_definitions"] = type_definitions
             return EdgePoint(node_id=input.node_id, connector_name=input.name, key=key)
         return EdgePoint(node_id=input.node_id, connector_name=input.name, key=None)
 
-    def output(self, name: str | None = None, key: str | None = None) -> EdgePoint:
+    def output(
+        self,
+        name: str | None = None,
+        key: str | None = None,
+        type_definition: str | None = None,
+        type_definition_is_list: bool = False,
+    ) -> EdgePoint:
         if name is None:
             if len(self.outputs) != 1:
                 raise ValueError("Multiple outputs found, please specify a name")
@@ -226,7 +254,7 @@ class Node(BaseModel):
         if name not in i:
             raise KeyError(f"Output {name} not found (possible: {list(i.keys())})")
         output = i[name]
-        if output.type == "variable_connector":
+        if output.type in ["variable_connector", "variable_type_size_connector"]:
             if key is None:
                 raise ValueError("key is required for variable_connector")
             connector_config = self.connector_config.get("outputs")
@@ -240,6 +268,22 @@ class Node(BaseModel):
             connector_keys = connector_outputs[name].get("keys", [])
             if key not in connector_keys:
                 connector_keys.append(key)
+            if output.type == "variable_type_size_connector":
+                assert (
+                    type_definition is not None
+                ), f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                type_definitions = connector_outputs[name].get("type_definitions", {})
+                choices = connector_outputs[name].get("choices", [])
+                if key not in type_definitions:
+                    typedef = {
+                        "data_type": type_definition,
+                        "is_list": type_definition_is_list,
+                    }
+                    type_definitions[key] = typedef
+                    if type_definition not in [c["data_type"] for c in choices]:
+                        choices.append(typedef)
+                    connector_outputs[name]["type_definitions"] = type_definitions
+                    connector_outputs[name]["choices"] = choices
             return EdgePoint(
                 node_id=output.node_id, connector_name=output.name, key=key
             )
