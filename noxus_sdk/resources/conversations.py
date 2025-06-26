@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TCH003
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, AsyncIterator, Iterator, Literal
 from uuid import UUID, uuid4
 
 from pydantic import (
@@ -85,6 +85,7 @@ class ConversationSettings(BaseModel):
     max_tokens: int | None = None
     tools: list[AnyToolSettings]
     extra_instructions: str | None = None
+    agent_flow_id: str | None = None
 
 
 class ConversationFile(BaseModel):
@@ -167,6 +168,36 @@ class Conversation(BaseResource):
         self._update_w_response(response)
         return self
 
+    def iter_messages(self) -> Iterator[MessageEvent]:
+        resp = self.client.event_stream(
+            f"/v1/conversations/{self.id}/events"
+            + ("?etag=" + self.etag if self.etag else "")
+        )
+        for event in resp:
+            message = MessageEvent.model_validate_json(event.data)
+            if message.role == "user":
+                continue
+            if message.type == "conversation_end":
+                yield message
+                break
+            yield message
+            self.refresh()
+
+    async def aiter_messages(self) -> AsyncIterator[MessageEvent]:
+        resp = self.client.aevent_stream(
+            f"/v1/conversations/{self.id}/events"
+            + ("?etag=" + self.etag if self.etag else "")
+        )
+        async for event in resp:
+            message = MessageEvent.model_validate_json(event.data)
+            if message.role == "user":
+                continue
+            if message.type == "conversation_end":
+                yield message
+                break
+            yield message
+            await self.arefresh()
+
     def add_message(self, message: MessageRequest) -> Message:
         response = self.client.post(
             f"/v1/conversations/{self.id}",
@@ -179,6 +210,12 @@ class Conversation(BaseResource):
             raise ValueError("No response from the server")
 
         return Message.model_validate(self.messages[-1])
+
+
+class MessageEvent(BaseModel):
+    role: str
+    type: str
+    content: str | None = None
 
 
 class ConversationService(BaseService[Conversation]):

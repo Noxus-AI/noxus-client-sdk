@@ -1,9 +1,10 @@
 import asyncio
 import os
 import time
-from typing import Any, BinaryIO
+from typing import Any, AsyncIterator, BinaryIO, Iterator
 
 import httpx
+from httpx_sse import ServerSentEvent, connect_sse, aconnect_sse
 
 FileContent = BinaryIO | bytes | str
 HttpxFile = tuple[str, tuple[str, FileContent, str | None]]
@@ -163,6 +164,70 @@ class Requester:
             return response.json()
         raise Exception("Request failed")
 
+    def event_stream(
+        self,
+        url: str,
+        headers: dict | None = None,
+        json: dict | None = None,
+        files: RequestFiles = None,
+        params: dict | None = None,
+        timeout: int | None = None,
+    ) -> Iterator[ServerSentEvent]:
+        headers_ = {"X-API-Key": self.api_key}
+        if headers:
+            headers_.update(headers)
+        if self.extra_headers:
+            headers_.update(self.extra_headers)
+        ratelimited = True
+        with httpx.Client() as client:
+            while ratelimited:
+                with connect_sse(
+                    client=client,
+                    method="GET",
+                    url=f"{self.base_url}{url}",
+                    headers=headers_,
+                    follow_redirects=True,
+                    json=json,
+                    files=files,
+                    params=params,
+                    timeout=timeout or 30,
+                ) as response:
+                    for chunk in response.iter_sse():
+                        yield chunk
+        raise Exception("Request failed")
+
+    async def aevent_stream(
+        self,
+        url: str,
+        headers: dict | None = None,
+        json: dict | None = None,
+        files: RequestFiles = None,
+        params: dict | None = None,
+        timeout: int | None = None,
+    ) -> AsyncIterator[ServerSentEvent]:
+        headers_ = {"X-API-Key": self.api_key}
+        if headers:
+            headers_.update(headers)
+        if self.extra_headers:
+            headers_.update(self.extra_headers)
+        ratelimited = True
+        async with httpx.AsyncClient() as client:
+            while ratelimited:
+                async with aconnect_sse(
+                    client=client,
+                    method="GET",
+                    url=f"{self.base_url}{url}",
+                    headers=headers_,
+                    follow_redirects=True,
+                    json=json,
+                    files=files,
+                    params=params,
+                    timeout=timeout or 30,
+                ) as response:
+                    async for chunk in response.aiter_sse():
+                        yield chunk
+        raise Exception("Request failed")
+
     def get(
         self,
         url: str,
@@ -252,6 +317,7 @@ class Client(Requester):
         from noxus_sdk.resources.knowledge_bases import KnowledgeBaseService
         from noxus_sdk.resources.runs import RunService
         from noxus_sdk.resources.workflows import WorkflowService
+        from noxus_sdk.resources.agentflows import AgentFlowService
         from noxus_sdk.workflows import load_node_types
 
         self.api_key = api_key
@@ -265,6 +331,7 @@ class Client(Requester):
             self.nodes = []
 
         self.workflows = WorkflowService(self)
+        self.agentflows = AgentFlowService(self)
         self.agents = AgentService(self)
         self.conversations = ConversationService(self)
         self.knowledge_bases = KnowledgeBaseService(self)
