@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TCH003
-from typing import Annotated, Any, AsyncIterator, Iterator, Literal
+from typing import Annotated, Any, Literal, TYPE_CHECKING
+
 from uuid import UUID, uuid4
 
 from pydantic import (
@@ -15,6 +16,9 @@ from pydantic import (
 )
 
 from noxus_sdk.resources.base import BaseResource, BaseService
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterator
 
 
 class ConversationTool(BaseModel):
@@ -168,7 +172,7 @@ class Conversation(BaseResource):
         self._update_w_response(response)
         return self
 
-    def iter_messages(self) -> Iterator[MessageEvent]:
+    def iter_messages(self) -> "Iterator[MessageEvent]":
         resp = self.client.event_stream(
             f"/v1/conversations/{self.id}/events"
             + ("?etag=" + self.etag if self.etag else "")
@@ -183,7 +187,7 @@ class Conversation(BaseResource):
             yield message
             self.refresh()
 
-    async def aiter_messages(self) -> AsyncIterator[MessageEvent]:
+    async def aiter_messages(self) -> "AsyncIterator[MessageEvent]":
         resp = self.client.aevent_stream(
             f"/v1/conversations/{self.id}/events"
             + ("?etag=" + self.etag if self.etag else "")

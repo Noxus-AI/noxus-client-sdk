@@ -1,10 +1,13 @@
 import asyncio
 import os
 import time
-from typing import Any, AsyncIterator, BinaryIO, Iterator
+from typing import Any, BinaryIO, TYPE_CHECKING
 
 import httpx
 from httpx_sse import ServerSentEvent, connect_sse, aconnect_sse
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterator
 
 FileContent = BinaryIO | bytes | str
 HttpxFile = tuple[str, tuple[str, FileContent, str | None]]
@@ -172,7 +175,7 @@ class Requester:
         files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
-    ) -> Iterator[ServerSentEvent]:
+    ) -> "Iterator[ServerSentEvent]":
         headers_ = {"X-API-Key": self.api_key}
         if headers:
             headers_.update(headers)
@@ -192,8 +195,7 @@ class Requester:
                     params=params,
                     timeout=timeout or 30,
                 ) as response:
-                    for chunk in response.iter_sse():
-                        yield chunk
+                    yield from response.iter_sse()
         raise Exception("Request failed")
 
     async def aevent_stream(
@@ -204,7 +206,7 @@ class Requester:
         files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
-    ) -> AsyncIterator[ServerSentEvent]:
+    ) -> "AsyncIterator[ServerSentEvent]":
         headers_ = {"X-API-Key": self.api_key}
         if headers:
             headers_.update(headers)
@@ -224,8 +226,8 @@ class Requester:
                     params=params,
                     timeout=timeout or 30,
                 ) as response:
-                    async for chunk in response.aiter_sse():
-                        yield chunk
+                    async for event in response.aiter_sse():
+                        yield event
         raise Exception("Request failed")
 
     def get(
