@@ -172,7 +172,7 @@ class Conversation(BaseResource):
         self._update_w_response(response)
         return self
 
-    def iter_messages(self) -> "Iterator[MessageEvent]":
+    def iter_messages(self) -> Iterator[MessageEvent]:
         resp = self.client.event_stream(
             f"/v1/conversations/{self.id}/events"
             + ("?etag=" + self.etag if self.etag else "")
@@ -187,7 +187,7 @@ class Conversation(BaseResource):
             yield message
             self.refresh()
 
-    async def aiter_messages(self) -> "AsyncIterator[MessageEvent]":
+    async def aiter_messages(self) -> AsyncIterator[MessageEvent]:
         resp = self.client.aevent_stream(
             f"/v1/conversations/{self.id}/events"
             + ("?etag=" + self.etag if self.etag else "")
