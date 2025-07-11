@@ -28,7 +28,7 @@ from noxus_sdk.resources.workflows import (
 @pytest.fixture
 def agent_settings():
     return AgentSettings(
-        model_selection=["gpt-4o"],
+        model=["gpt-4o"],
         temperature=0.7,
         tools=[WebResearchTool(), NoxusQaTool()],
         max_tokens=150,
@@ -42,7 +42,7 @@ async def test_create_agent(client: Client, agent_settings: AgentSettings):
 
     try:
         assert agent.name == "Test Agent"
-        assert agent.definition.model_selection == ["gpt-4o"]
+        assert agent.definition.model == ["gpt-4o"]
         assert agent.definition.temperature == 0.7
         assert agent.definition.max_tokens == 150
         assert agent.definition.extra_instructions == "Be concise and helpful."
@@ -121,7 +121,7 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
     try:
         # Update settings with real workflow ID
         new_settings = ConversationSettings(
-            model_selection=["gpt-4o"],
+            model=["gpt-4o"],
             temperature=0.5,
             tools=[WorkflowTool(workflow_id=created_workflow.id)],
             max_tokens=200,
@@ -133,7 +133,7 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         )
 
         assert updated.name == "Updated Name"
-        assert updated.definition.model_selection == ["gpt-4o"]
+        assert updated.definition.model == ["gpt-4o"]
         assert updated.definition.temperature == 0.5
         assert updated.definition.max_tokens == 200
         assert updated.definition.extra_instructions == "Updated instructions"
@@ -144,7 +144,7 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         # Test instance update method with real KB
         instance_updated = await client.agents.aget(agent.id)
         instance_settings = ConversationSettings(
-            model_selection=["gpt-4o"],
+            model=["gpt-4o"],
             temperature=0.8,
             tools=[KnowledgeBaseSelectorTool()],
             max_tokens=300,
@@ -154,7 +154,7 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         )
 
         assert result.name == "Instance Updated"
-        assert result.definition.model_selection == ["gpt-4o"]
+        assert result.definition.model == ["gpt-4o"]
         assert result.definition.temperature == 0.8
         assert result.definition.max_tokens == 300
         assert len(result.definition.tools) == 1
@@ -237,7 +237,7 @@ async def test_agent_with_all_tool_types(client: Client):
 
     # Create an agent with all tool types and real IDs
     settings = ConversationSettings(
-        model_selection=["gpt-4"],
+        model=["gpt-4"],
         temperature=0.7,
         tools=[
             WebResearchTool(),
@@ -311,7 +311,7 @@ def test_synchronous_agent_operations(client: Client, agent_settings: AgentSetti
 
         # Test synchronous update
         updated_settings = ConversationSettings(
-            model_selection=["gpt-4"],
+            model=["gpt-4"],
             temperature=0.5,
             tools=[NoxusQaTool()],
             max_tokens=100,

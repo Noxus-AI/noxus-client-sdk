@@ -21,7 +21,7 @@ from noxus_sdk.resources.knowledge_bases import KnowledgeBase
 @pytest.fixture
 def conversation_settings():
     return ConversationSettings(
-        model_selection=["gpt-4o"], temperature=0.7, tools=[NoxusQaTool()]
+        model=["gpt-4o"], temperature=0.7, tools=[NoxusQaTool()]
     )
 
 
@@ -35,7 +35,7 @@ async def test_create_conversation(
 
     try:
         assert conversation.name == "Test Conversation"
-        assert conversation.settings.model_selection == ["gpt-4o"]
+        assert conversation.settings.model == ["gpt-4o"]
         assert conversation.settings.temperature == 0.7
         assert len(conversation.settings.tools) == 1
 
@@ -108,7 +108,7 @@ async def test_conversation_messages(
 @pytest.mark.anyio
 async def test_conversation_with_kb(client: Client, kb: KnowledgeBase, test_file: Path):
     conversation_settings = ConversationSettings(
-        model_selection=["gpt-4o"], temperature=0.7, tools=[KnowledgeBaseSelectorTool()]
+        model=["gpt-4o"], temperature=0.7, tools=[KnowledgeBaseSelectorTool()]
     )
 
     conversation = await client.conversations.acreate(
@@ -139,7 +139,7 @@ async def test_conversation_with_kb(client: Client, kb: KnowledgeBase, test_file
 @pytest.mark.anyio
 async def test_conversation_with_web_search(client: Client):
     conversation_settings = ConversationSettings(
-        model_selection=["gpt-4o"], temperature=0.7, tools=[WebResearchTool()]
+        model=["gpt-4o"], temperature=0.7, tools=[WebResearchTool()]
     )
 
     conversation = await client.conversations.acreate(
@@ -166,7 +166,7 @@ async def test_conversation_with_web_search(client: Client):
 @pytest.mark.anyio
 async def test_conversation_with_noxus_qa(client: Client):
     conversation_settings = ConversationSettings(
-        model_selection=["gpt-4o"], temperature=0.7, tools=[NoxusQaTool()]
+        model=["gpt-4o"], temperature=0.7, tools=[NoxusQaTool()]
     )
 
     conversation = await client.conversations.acreate(
@@ -231,7 +231,7 @@ async def test_update_conversation(
     try:
         # Update settings
         new_settings = ConversationSettings(
-            model_selection=["gpt-3.5-turbo"],
+            model=["gpt-3.5-turbo"],
             temperature=0.5,
             tools=[WebResearchTool()],
         )
@@ -241,7 +241,7 @@ async def test_update_conversation(
         )
 
         assert updated.name == "Updated Name"
-        assert updated.settings.model_selection == ["gpt-3.5-turbo"]
+        assert updated.settings.model == ["gpt-3.5-turbo"]
         assert updated.settings.temperature == 0.5
         assert len(updated.settings.tools) == 1
 
