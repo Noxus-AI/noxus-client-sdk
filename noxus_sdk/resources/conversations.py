@@ -84,7 +84,7 @@ AnyToolSettings = Annotated[
 
 
 class ConversationSettings(BaseModel):
-    model_selection: list[str]
+    model: list[str]
     temperature: float
     max_tokens: int | None = None
     tools: list[AnyToolSettings]

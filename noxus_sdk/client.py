@@ -195,6 +195,7 @@ class Requester:
                     params=params,
                     timeout=timeout or 30,
                 ) as response:
+                    ratelimited = False
                     yield from response.iter_sse()
         raise Exception("Request failed")
 
@@ -226,6 +227,7 @@ class Requester:
                     params=params,
                     timeout=timeout or 30,
                 ) as response:
+                    ratelimited = False
                     async for event in response.aiter_sse():
                         yield event
         raise Exception("Request failed")
