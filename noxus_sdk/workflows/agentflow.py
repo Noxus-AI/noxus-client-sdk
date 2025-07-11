@@ -49,7 +49,7 @@ class AgentFlowDefinition(WorkflowDefinition):
             name=self.name,
             settings=ConversationSettings(
                 agent_flow_id=self.id,
-                model_selection=[
+                model=[
                     "chat-balanced",
                     "gpt-4.1",
                     "claude-4-sonnet",
@@ -72,7 +72,7 @@ class AgentFlowDefinition(WorkflowDefinition):
             self.id,
             ConversationSettings(
                 agent_flow_id=self.id,
-                model_selection=[
+                model=[
                     "chat-balanced",
                     "gpt-4.1",
                     "claude-4-sonnet",
