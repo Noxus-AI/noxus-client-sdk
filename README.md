@@ -54,7 +54,7 @@ for workflow in workflows:
 from noxus_sdk.resources.conversations import ConversationSettings
 
 settings = ConversationSettings(
-    model_selection=["gpt-4o-mini"],
+    model=["gpt-4o-mini"],
     temperature=0.7,
     max_tokens=150,
     tools=[],
@@ -403,7 +403,7 @@ web_research_tool = WebResearchTool(
 
 # Define conversation settings
 settings = ConversationSettings(
-    model_selection=["gpt-4o-mini"],
+    model=["gpt-4o-mini"],
     temperature=0.7,
     max_tokens=150,
     tools=[web_research_tool],
@@ -553,7 +553,7 @@ workflow_tool = WorkflowTool(
 
 # Create settings with all tools
 settings = ConversationSettings(
-    model_selection=["gpt-4o-mini"],
+    model=["gpt-4o-mini"],
     temperature=0.7,
     max_tokens=150,
     tools=[web_tool, noxus_qa_tool, kb_selector_tool, kb_qa_tool, workflow_tool],
@@ -586,7 +586,7 @@ workflow_tool = WorkflowTool(
 
 # Define agent settings
 agent_settings = ConversationSettings(
-    model_selection=["gpt-4o-mini"],
+    model=["gpt-4o-mini"],
     temperature=0.7,
     max_tokens=150,
     tools=[workflow_tool],
@@ -747,7 +747,7 @@ models = client.get_models()
 model_names = [model["name"] for model in models]
 
 settings = ConversationSettings(
-    model_selection=[model_names[0]],  # Use the first available model
+    model=[model_names[0]],  # Use the first available model
     temperature=0.7,
     max_tokens=150,
     tools=[],
