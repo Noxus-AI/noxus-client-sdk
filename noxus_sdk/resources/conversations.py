@@ -84,10 +84,7 @@ AnyToolSettings = Annotated[
 
 
 class ConversationSettings(BaseModel):
-    model: list[str] = Field(
-        alias="model_selection",
-        validation_alias=AliasChoices("model", "model_selection"),
-    )
+    model: list[str] = Field(validation_alias=AliasChoices("model", "model_selection"))
     temperature: float
     max_tokens: int | None = None
     tools: list[AnyToolSettings]
