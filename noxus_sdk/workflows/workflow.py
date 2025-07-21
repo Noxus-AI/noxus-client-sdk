@@ -342,6 +342,7 @@ class WorkflowDefinition(BaseModel):
     nodes: list["Node"] = []
     edges: list["Edge"] = []
     x: int = 0
+    error_handler: uuid.UUID | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -352,7 +353,7 @@ class WorkflowDefinition(BaseModel):
         return values
 
     def to_noxus(self) -> dict:
-        return {
+        d = {
             "name": self.name,
             "type": self.type,
             "definition": {
@@ -360,6 +361,9 @@ class WorkflowDefinition(BaseModel):
                 "edges": [e.model_dump() for e in self.edges],
             },
         }
+        if self.error_handler:
+            d["error_handler"] = str(self.error_handler)
+        return d
 
     def refresh_from_data(self, client: Client | None = None, **data):
         n = self.__class__.model_validate(data)
