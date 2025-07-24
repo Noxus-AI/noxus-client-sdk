@@ -21,7 +21,7 @@ class Requester:
         self.api_key = api_key
         self.extra_headers = extra_headers
 
-    async def arequest(
+    async def _arequest(
         self,
         method: str,
         url: str,
@@ -30,7 +30,7 @@ class Requester:
         files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
-    ):
+    ) -> httpx.Response:
         headers_ = {"X-API-Key": self.api_key}
         if headers:
             headers_.update(headers)
@@ -54,8 +54,30 @@ class Requester:
                     continue
                 ratelimited = False
                 response.raise_for_status()
-                return response.json()
+                return response
         raise Exception("Request failed")
+
+    async def arequest(
+        self,
+        method: str,
+        url: str,
+        headers: dict | None = None,
+        json: dict | None = None,
+        files: RequestFiles = None,
+        params: dict | None = None,
+        timeout: int | None = None,
+    ):
+        return (
+            await self._arequest(
+                method,
+                url,
+                headers=headers,
+                json=json,
+                files=files,
+                params=params,
+                timeout=timeout,
+            )
+        ).json()
 
     async def aget(
         self,
@@ -132,7 +154,7 @@ class Requester:
     ):
         return await self.arequest("DELETE", url, headers=headers, timeout=timeout)
 
-    def request(
+    def _request(
         self,
         method: str,
         url: str,
@@ -141,7 +163,7 @@ class Requester:
         files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
-    ):
+    ) -> httpx.Response:
         headers_ = {"X-API-Key": self.api_key}
         if headers:
             headers_.update(headers)
@@ -164,8 +186,29 @@ class Requester:
                 continue
             ratelimited = False
             response.raise_for_status()
-            return response.json()
+            return response
         raise Exception("Request failed")
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        headers: dict | None = None,
+        json: dict | None = None,
+        files: RequestFiles = None,
+        params: dict | None = None,
+        timeout: int | None = None,
+    ):
+        response = self._request(
+            method,
+            url,
+            headers=headers,
+            json=json,
+            files=files,
+            params=params,
+            timeout=timeout,
+        )
+        return response.json()
 
     def event_stream(
         self,
@@ -322,6 +365,7 @@ class Client(Requester):
         from noxus_sdk.resources.runs import RunService
         from noxus_sdk.resources.workflows import WorkflowService
         from noxus_sdk.resources.agentflows import AgentFlowService
+        from noxus_sdk.resources.files import FileService
         from noxus_sdk.workflows import load_node_types
 
         self.api_key = api_key
@@ -341,6 +385,7 @@ class Client(Requester):
         self.knowledge_bases = KnowledgeBaseService(self)
         self.runs = RunService(self)
         self.admin = AdminService(self, enabled=bool(not load_me))
+        self.files = FileService(self)
         if load_me:
             self.admin.enabled = self.admin.get_me().tenant_admin
 
