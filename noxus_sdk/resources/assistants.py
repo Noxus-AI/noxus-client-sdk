@@ -1,4 +1,4 @@
-from typing import TypeAlias, List
+from typing import TypeAlias
 from uuid import UUID
 import enum
 
