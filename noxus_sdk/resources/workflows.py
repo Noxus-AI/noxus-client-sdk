@@ -142,7 +142,7 @@ class WorkflowService(BaseService[WorkflowDefinition]):
             {
                 "name": name,
                 "description": description,
-                "definition": definition.to_noxus(),
+                "definition": definition.to_noxus()["definition"],
             },
         )
         return WorkflowVersion.model_validate({"client": self.client, **w})
@@ -160,7 +160,7 @@ class WorkflowService(BaseService[WorkflowDefinition]):
             {
                 "name": name,
                 "description": description,
-                "definition": definition.to_noxus(),
+                "definition": definition.to_noxus()["definition"],
             },
         )
         return WorkflowVersion.model_validate({"client": self.client, **w})
