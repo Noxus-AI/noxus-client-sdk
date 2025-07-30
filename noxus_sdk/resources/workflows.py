@@ -1,7 +1,19 @@
+from datetime import datetime
+from uuid import UUID
+from builtins import list as List  # noqa
 from pydantic import ConfigDict
 
-from noxus_sdk.resources.base import BaseService
+from noxus_sdk.resources.base import BaseResource, BaseService
 from noxus_sdk.workflows import WorkflowDefinition
+
+
+class WorkflowVersion(BaseResource):
+    id: UUID
+    name: str
+    description: str | None = None
+    created_at: datetime
+    created_by: UUID | None = None
+    definition: dict
 
 
 class WorkflowService(BaseService[WorkflowDefinition]):
@@ -72,3 +84,83 @@ class WorkflowService(BaseService[WorkflowDefinition]):
         )
         workflow.refresh_from_data(client=self.client, **w)
         return workflow
+
+    def save_version(
+        self,
+        workflow_id: str,
+        workflow: WorkflowDefinition,
+        name: str,
+        description: str | None,
+    ) -> WorkflowVersion:
+        body = {
+            "name": name,
+            "description": description,
+            "definition": workflow.to_noxus()["definition"],
+        }
+        w = self.client.post(
+            f"/v1/workflows/{workflow_id}/versions",
+            body,
+        )
+        return WorkflowVersion.model_validate({"client": self.client, **w})
+
+    async def asave_version(
+        self,
+        workflow_id: str,
+        workflow: WorkflowDefinition,
+        name: str,
+        description: str | None,
+    ) -> WorkflowVersion:
+        body = {
+            "name": name,
+            "description": description,
+            "definition": workflow.to_noxus()["definition"],
+        }
+        w = await self.client.apost(
+            f"/v1/workflows/{workflow_id}/versions",
+            body,
+        )
+        return WorkflowVersion.model_validate({"client": self.client, **w})
+
+    def list_versions(self, workflow_id: str) -> List[WorkflowVersion]:
+        w = self.client.get(f"/v1/workflows/{workflow_id}/versions")
+        return [WorkflowVersion.model_validate({"client": self.client, **v}) for v in w]
+
+    async def alist_versions(self, workflow_id: str) -> List[WorkflowVersion]:
+        w = await self.client.aget(f"/v1/workflows/{workflow_id}/versions")
+        return [WorkflowVersion.model_validate({"client": self.client, **v}) for v in w]
+
+    def update_version(
+        self,
+        workflow_id: str,
+        version_id: str,
+        name: str,
+        description: str | None,
+        definition: WorkflowDefinition,
+    ) -> WorkflowVersion:
+        w = self.client.patch(
+            f"/v1/workflows/{workflow_id}/versions/{version_id}",
+            {
+                "name": name,
+                "description": description,
+                "definition": definition.to_noxus(),
+            },
+        )
+        return WorkflowVersion.model_validate({"client": self.client, **w})
+
+    async def aupdate_version(
+        self,
+        workflow_id: str,
+        version_id: str,
+        name: str,
+        description: str | None,
+        definition: WorkflowDefinition,
+    ) -> WorkflowVersion:
+        w = await self.client.apatch(
+            f"/v1/workflows/{workflow_id}/versions/{version_id}",
+            {
+                "name": name,
+                "description": description,
+                "definition": definition.to_noxus(),
+            },
+        )
+        return WorkflowVersion.model_validate({"client": self.client, **w})

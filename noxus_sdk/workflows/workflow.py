@@ -9,6 +9,7 @@ from noxus_sdk.client import Client
 
 if TYPE_CHECKING:
     from noxus_sdk.resources.runs import Run
+    from noxus_sdk.resources.workflows import WorkflowVersion
 
 
 class ConfigError(Exception):
@@ -346,7 +347,7 @@ class WorkflowDefinition(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def foo(cls, values):
+    def _definition_flattener(cls, values):
         if "definition" in values:
             values["nodes"] = values["definition"]["nodes"]
             values["edges"] = values["definition"]["edges"]
@@ -387,22 +388,32 @@ class WorkflowDefinition(BaseModel):
         self.refresh_from_data(client=self.client, **response)
         return self
 
-    def run(self, body: dict[str, Any]) -> "Run":
+    def run(
+        self, body: dict[str, Any], workflow_version_id: uuid.UUID | str | None = None
+    ) -> "Run":
         from noxus_sdk.resources.runs import Run
 
         if not self.client:
             raise ValueError("Client not set")
-        response = self.client.post(f"/v1/workflows/{self.id}/runs", {"input": body})
+        url = f"/v1/workflows/{self.id}/runs"
+        req: dict[str, Any] = {"input": body}
+        if workflow_version_id:
+            req["workflow_version_id"] = str(workflow_version_id)
+
+        response = self.client.post(url, req)
         return Run(client=self.client, **response)
 
-    async def arun(self, body: dict[str, Any]) -> "Run":
+    async def arun(
+        self, body: dict[str, Any], workflow_version_id: uuid.UUID | str | None = None
+    ) -> "Run":
         if not self.client:
             raise ValueError("Client not set")
         from noxus_sdk.resources.runs import Run
 
-        response = await self.client.apost(
-            f"/v1/workflows/{self.id}/runs", {"input": body}
-        )
+        req: dict[str, Any] = {"input": body}
+        if workflow_version_id:
+            req["workflow_version_id"] = str(workflow_version_id)
+        response = await self.client.apost(f"/v1/workflows/{self.id}/runs", req)
         return Run(client=self.client, **response)
 
     def update(self, force: bool = False):
@@ -428,6 +439,52 @@ class WorkflowDefinition(BaseModel):
         if not self.client:
             raise ValueError("Client not set")
         return await self.client.workflows.asave(self)
+
+    def save_version(self, name: str, description: str | None = None):
+        if not self.client:
+            raise ValueError("Client not set")
+        return self.client.workflows.save_version(self.id, self, name, description)
+
+    async def asave_version(self, name: str, description: str | None = None):
+        if not self.client:
+            raise ValueError("Client not set")
+        return await self.client.workflows.asave_version(
+            self.id, self, name, description
+        )
+
+    def update_version(
+        self,
+        version_id: str,
+        name: str,
+        description: str | None,
+    ) -> "WorkflowVersion":
+        if not self.client:
+            raise ValueError("Client not set")
+        return self.client.workflows.update_version(
+            self.id, version_id, name, description, self
+        )
+
+    async def aupdate_version(
+        self,
+        version_id: str,
+        name: str,
+        description: str | None,
+    ) -> "WorkflowVersion":
+        if not self.client:
+            raise ValueError("Client not set")
+        return await self.client.workflows.aupdate_version(
+            self.id, version_id, name, description, self
+        )
+
+    def list_versions(self) -> list["WorkflowVersion"]:
+        if not self.client:
+            raise ValueError("Client not set")
+        return self.client.workflows.list_versions(self.id)
+
+    async def alist_versions(self) -> list["WorkflowVersion"]:
+        if not self.client:
+            raise ValueError("Client not set")
+        return await self.client.workflows.alist_versions(self.id)
 
     def verify_name_legal(self, name):
         assert name not in [
