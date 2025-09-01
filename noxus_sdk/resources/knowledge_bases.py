@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import aiofiles
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from noxus_sdk.resources.base import BaseResource, BaseService
 from noxus_sdk.resources.runs import Run
@@ -106,6 +106,15 @@ class KnowledgeBaseSettings(BaseModel):
     retrieval: KnowledgeBaseRetrieval
 
 
+class KBConfigV3(BaseModel):
+    embedding_model: list[str] = Field(
+        default=["vertexai/text-multilingual-embedding-002"], min_length=1, max_length=1
+    )
+    default_chunk_size: int = 2048
+    default_chunk_overlap: int = 512
+    csv_row_as_document: bool = True
+
+
 class KnowledgeBaseDocument(BaseModel):
     id: str
     name: str
@@ -151,11 +160,12 @@ class KnowledgeBase(BaseResource):
     uploaded_documents: int
     source_types: dict
     training_source_types: builtins.list[str]
-    settings_: KnowledgeBaseSettings
+    settings_: KnowledgeBaseSettings | KBConfigV3
     retrieval: dict | None = None
     error: dict | None = None
     embeddings: dict | None = None
     documents: builtins.list[KnowledgeBaseDocument] = []
+    version: Literal["v2", "v3"] = "v3"
 
     def refresh(self) -> "KnowledgeBase":
         response = self.client.get(f"/v1/knowledge-bases/{self.id}")
@@ -357,7 +367,8 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         name: str,
         description: str,
         document_types: builtins.list[str],
-        settings_: KnowledgeBaseSettings,
+        settings_: KnowledgeBaseSettings | KBConfigV3,
+        version: Literal["v2", "v3"] = "v3",
     ) -> KnowledgeBase:
         knowledge_base = self.client.post(
             "/v1/knowledge-bases",
@@ -367,6 +378,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
                 "document_types": document_types,
                 "settings_": settings_.model_dump(),
                 "kb_type": "entity",
+                "version": version,
             },
         )
         return KnowledgeBase(client=self.client, **knowledge_base)
@@ -376,7 +388,8 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
         name: str,
         description: str,
         document_types: builtins.list[str],
-        settings_: KnowledgeBaseSettings,
+        settings_: KnowledgeBaseSettings | KBConfigV3,
+        version: Literal["v2", "v3"] = "v3",
     ) -> KnowledgeBase:
         knowledge_base = await self.client.apost(
             "/v1/knowledge-bases",
@@ -386,6 +399,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
                 "document_types": document_types,
                 "settings_": settings_.model_dump(),
                 "kb_type": "entity",
+                "version": version,
             },
         )
 
