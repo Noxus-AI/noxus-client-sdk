@@ -179,7 +179,7 @@ class Requester:
                 json=json,
                 files=files,
                 params=params,
-                timeout=timeout or 30,
+                timeout=timeout or 120,
             )
             if response.status_code == 429:
                 time.sleep(1)
@@ -236,7 +236,7 @@ class Requester:
                     json=json,
                     files=files,
                     params=params,
-                    timeout=timeout or 30,
+                    timeout=timeout or 120,
                 ) as response:
                     ratelimited = False
                     yield from response.iter_sse()
@@ -268,7 +268,7 @@ class Requester:
                     json=json,
                     files=files,
                     params=params,
-                    timeout=timeout or 30,
+                    timeout=timeout or 120,
                 ) as response:
                     ratelimited = False
                     async for event in response.aiter_sse():
