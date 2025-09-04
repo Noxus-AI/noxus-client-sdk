@@ -47,7 +47,7 @@ class Requester:
                     json=json,
                     files=files,
                     params=params,
-                    timeout=timeout or httpx.USE_CLIENT_DEFAULT,
+                    timeout=timeout or 120,
                 )
                 if response.status_code == 429:
                     await asyncio.sleep(1)
