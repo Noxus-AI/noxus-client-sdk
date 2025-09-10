@@ -108,7 +108,7 @@ class KnowledgeBaseSettings(BaseModel):
 
 class KBConfigV3(BaseModel):
     embedding_model: list[str] = Field(
-        default=["vertexai/text-multilingual-embedding-002"], min_length=1, max_length=1
+        default=["vertexai/text-multilingual-embedding-002"], min_length=1,
     )
     default_chunk_size: int = 2048
     default_chunk_overlap: int = 512
