@@ -7,9 +7,7 @@ import pytest
 from filelock import FileLock
 from noxus_sdk.client import Client
 from noxus_sdk.resources.knowledge_bases import (
-    KnowledgeBaseIngestion,
-    KnowledgeBaseRetrieval,
-    KnowledgeBaseSettings,
+    KBConfigV3,
 )
 
 
@@ -69,20 +67,7 @@ async def test_file():
 
 @pytest.fixture
 async def kb(client: Client, test_file: Path):
-    settings = KnowledgeBaseSettings(
-        ingestion=KnowledgeBaseIngestion(
-            batch_size=10,
-            default_chunk_size=1000,
-            default_chunk_overlap=100,
-            enrich_chunks_mode="contextual",
-            enrich_pre_made_qa=False,
-        ),
-        retrieval=KnowledgeBaseRetrieval(
-            type="hybrid_reranking",
-            hybrid_settings={"fts_weight": 0.5},
-            reranker_settings={},
-        ),
-    )
+    settings = KBConfigV3()
 
     kb = await client.knowledge_bases.acreate(
         name="test_kb",
