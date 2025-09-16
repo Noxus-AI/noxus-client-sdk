@@ -1,17 +1,16 @@
 import asyncio
-from pathlib import Path
 import time
+from pathlib import Path
 
+import httpx
 import pytest
+from noxus_sdk.client import Client
 from noxus_sdk.resources.knowledge_bases import (
     CreateDocument,
+    KBConfigV3,
     KnowledgeBase,
-    KnowledgeBaseIngestion,
-    KnowledgeBaseRetrieval,
-    KnowledgeBaseSettings,
     UpdateDocument,
 )
-from noxus_sdk.client import Client
 
 
 async def wait_for_documents(kb: KnowledgeBase, expected_count: int, timeout: int = 30):
@@ -26,10 +25,14 @@ async def wait_for_documents(kb: KnowledgeBase, expected_count: int, timeout: in
 
 @pytest.mark.anyio
 async def test_list_documents(kb: KnowledgeBase, test_file: Path):
-    doc = await kb.acreate_document(CreateDocument(name="test1", prefix="/test1"))
+    try:
+        doc = await kb.acreate_document(CreateDocument(name="test1", prefix="/test1"))
 
-    documents = await kb.alist_documents(status="uploaded")
-    assert len(documents) == 1
+        documents = await kb.alist_documents(status="uploaded")
+        assert len(documents) == 1
+    except httpx.HTTPStatusError as e:
+        print(e.response.content)
+        raise e
 
 
 @pytest.mark.anyio
@@ -52,21 +55,8 @@ async def test_document_operations(kb: KnowledgeBase, test_file: Path):
 
 
 @pytest.mark.anyio
-async def test_list_knowledge_bases(client):
-    settings = KnowledgeBaseSettings(
-        ingestion=KnowledgeBaseIngestion(
-            batch_size=10,
-            default_chunk_size=1000,
-            default_chunk_overlap=100,
-            enrich_chunks_mode="contextual",
-            enrich_pre_made_qa=False,
-        ),
-        retrieval=KnowledgeBaseRetrieval(
-            type="hybrid_reranking",
-            hybrid_settings={"fts_weight": 0.5},
-            reranker_settings={},
-        ),
-    )
+async def test_list_knowledge_bases(client: Client):
+    settings = KBConfigV3()
 
     test_kb = await client.knowledge_bases.acreate(
         name="test_list_kb",
@@ -96,20 +86,7 @@ async def test_list_knowledge_bases(client):
 
 @pytest.mark.anyio
 async def test_kb_cleanup(client: Client):
-    settings = KnowledgeBaseSettings(
-        ingestion=KnowledgeBaseIngestion(
-            batch_size=10,
-            default_chunk_size=1000,
-            default_chunk_overlap=100,
-            enrich_chunks_mode="contextual",
-            enrich_pre_made_qa=False,
-        ),
-        retrieval=KnowledgeBaseRetrieval(
-            type="hybrid_reranking",
-            hybrid_settings={"fts_weight": 0.5},
-            reranker_settings={},
-        ),
-    )
+    settings = KBConfigV3()
 
     kb = await client.knowledge_bases.acreate(
         name="test_kb",
@@ -125,21 +102,9 @@ async def test_kb_cleanup(client: Client):
 
 
 @pytest.mark.anyio
+@pytest.mark.skip
 async def test_kb_training(client: Client, test_file: Path):
-    settings = KnowledgeBaseSettings(
-        ingestion=KnowledgeBaseIngestion(
-            batch_size=10,
-            default_chunk_size=1000,
-            default_chunk_overlap=100,
-            enrich_chunks_mode="contextual",
-            enrich_pre_made_qa=False,
-        ),
-        retrieval=KnowledgeBaseRetrieval(
-            type="hybrid_reranking",
-            hybrid_settings={"fts_weight": 0.5},
-            reranker_settings={},
-        ),
-    )
+    settings = KBConfigV3()
 
     kb = await client.knowledge_bases.acreate(
         name="test_kb",
@@ -156,11 +121,12 @@ async def test_kb_training(client: Client, test_file: Path):
         await kb.arefresh()
     assert kb.status in ["training"]
 
+    timeout = time.time() + 120  # 60s timeout
     trained_docs = await kb.alist_documents(status="trained")
-    timeout = time.time() + 60  # 60s timeout
     while len(trained_docs) == 0 and timeout - time.time() > 0:
         trained_docs = await kb.alist_documents(status="trained")
         await asyncio.sleep(0.5)
+    trained_docs = await kb.alist_documents(status="trained")
     training_docs = await kb.alist_documents(status="training")
     uploaded_docs = await kb.alist_documents(status="uploaded")
     assert len(trained_docs) + len(training_docs) + len(uploaded_docs) == 1

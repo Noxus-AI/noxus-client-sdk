@@ -16,6 +16,7 @@ from noxus_sdk.resources.conversations import (
     MessageRequest,
 )
 from noxus_sdk.resources.knowledge_bases import (
+    KBConfigV3,
     KnowledgeBaseIngestion,
     KnowledgeBaseRetrieval,
     KnowledgeBaseSettings,
@@ -97,28 +98,15 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
     created_workflow = await workflow.asave()
 
     # Create a knowledge base for testing
-    kb_settings = KnowledgeBaseSettings(
-        ingestion=KnowledgeBaseIngestion(
-            batch_size=10,
-            default_chunk_size=1000,
-            default_chunk_overlap=100,
-            enrich_chunks_mode="contextual",
-            enrich_pre_made_qa=False,
-        ),
-        retrieval=KnowledgeBaseRetrieval(
-            type="hybrid_reranking",
-            hybrid_settings={"fts_weight": 0.5},
-            reranker_settings={},
-        ),
-    )
-    test_kb = await client.knowledge_bases.acreate(
-        name="test_agent_kb",
-        description="Test KB for agent",
-        document_types=["text"],
-        settings_=kb_settings,
-    )
+    kb_settings = KBConfigV3()
 
     try:
+        test_kb = await client.knowledge_bases.acreate(
+            name="test_agent_kb",
+            description="Test KB for agent",
+            document_types=["text"],
+            settings_=kb_settings,
+        )
         # Update settings with real workflow ID
         new_settings = ConversationSettings(
             model=["gpt-4o"],
@@ -160,7 +148,6 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         assert len(result.definition.tools) == 1
         assert result.definition.tools[0].type == "kb_selector"
     except httpx.HTTPStatusError as e:
-        # print the reason why 422
         print(e.response.text)
         raise e
     finally:
@@ -214,20 +201,7 @@ async def test_agent_with_all_tool_types(client: Client):
     created_workflow = await workflow.asave()
 
     # Create a knowledge base for testing
-    kb_settings = KnowledgeBaseSettings(
-        ingestion=KnowledgeBaseIngestion(
-            batch_size=10,
-            default_chunk_size=1000,
-            default_chunk_overlap=100,
-            enrich_chunks_mode="contextual",
-            enrich_pre_made_qa=False,
-        ),
-        retrieval=KnowledgeBaseRetrieval(
-            type="hybrid_reranking",
-            hybrid_settings={"fts_weight": 0.5},
-            reranker_settings={},
-        ),
-    )
+    kb_settings = KBConfigV3()
     test_kb = await client.knowledge_bases.acreate(
         name="test_all_tools_kb",
         description="Test KB for all tools",
@@ -244,9 +218,7 @@ async def test_agent_with_all_tool_types(client: Client):
             NoxusQaTool(),
             KnowledgeBaseSelectorTool(),
             KnowledgeBaseQaTool(kb_id=test_kb.id),
-            WorkflowTool(
-                workflow_id=created_workflow.id,
-            ),
+            WorkflowTool(workflow_id=created_workflow.id),
         ],
         max_tokens=150,
     )
@@ -329,3 +301,72 @@ def test_synchronous_agent_operations(client: Client, agent_settings: AgentSetti
         # Verify deletion
         with pytest.raises(httpx.HTTPStatusError):
             client.agents.get(agent.id)
+
+
+@pytest.mark.anyio
+@pytest.mark.skip(reason="The workflow tool is not working as expected")
+async def test_agent_run_workflow(client: Client):
+    # Create a workflow for testing
+    workflow = WorkflowDefinition(client=client, name="Test All Tools Workflow")
+    input_node = workflow.node("InputNode")
+    ai_node = workflow.node("TextGenerationNode").config(
+        label="Test Generation",
+        template="Write a poem about ((Input 1))",
+        model=["gpt-4o"],
+    )
+    output_node = workflow.node("OutputNode")
+    workflow.link(input_node.output(), ai_node.input("variables", "Input 1"))
+    workflow.link(ai_node.output(), output_node.input())
+    created_workflow = await workflow.asave()
+
+    # Create an agent with all tool types and real IDs
+    settings = ConversationSettings(
+        model=["gpt-4"],
+        temperature=0.7,
+        tools=[
+            WorkflowTool(workflow_id=created_workflow.id),
+        ],
+        max_tokens=1000,
+    )
+
+    agent = await client.agents.acreate(name="Workflow Agent", settings=settings)
+
+    try:
+        # Verify all tools were set
+        assert len(agent.definition.tools) == 1
+
+        # Check if all tool types are present
+        tool_types = [tool.type for tool in agent.definition.tools]
+        assert "workflow" in tool_types
+
+        # Verify specific tool properties
+        workflow_tool = next(
+            tool for tool in agent.definition.tools if tool.type == "workflow"
+        )
+        assert workflow_tool.workflow_id == created_workflow.id
+
+        # Create conversation
+        conversation = await client.conversations.acreate(
+            name="Workflow Conversation", agent_id=agent.id
+        )
+
+        # Send message
+        message = MessageRequest(
+            content="I want a poem about japan. Use the workflow to generate it.",
+            tool="workflow",
+        )
+        await conversation.aadd_message(message)
+
+        # Get messages
+        messages = await conversation.aget_messages()
+        assert len(messages) >= 1
+
+        # Get output
+        assert any(
+            part["type"] == "function"
+            for message in messages
+            for part in message.message_parts
+        )
+
+    finally:
+        await client.agents.adelete(agent.id)
