@@ -94,13 +94,12 @@ class ConversationSettings(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_extra_instructions(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            if data.get("extra_instructions") is not None and isinstance(
-                data.get("extra_instructions"), dict
-            ):
-                data["extra_instructions"] = data.get("extra_instructions", {}).get(
-                    "text"
-                )
+        if (
+            isinstance(data, dict)
+            and data.get("extra_instructions") is not None
+            and isinstance(data.get("extra_instructions"), dict)
+        ):
+            data["extra_instructions"] = data.get("extra_instructions", {}).get("text")
         return data
 
 
