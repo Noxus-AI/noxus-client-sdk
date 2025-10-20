@@ -91,6 +91,17 @@ class ConversationSettings(BaseModel):
     extra_instructions: str | None = None
     agent_flow_id: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_extra_instructions(cls, data: Any) -> Any:
+        if (
+            isinstance(data, dict)
+            and data.get("extra_instructions") is not None
+            and isinstance(data.get("extra_instructions"), dict)
+        ):
+            data["extra_instructions"] = data.get("extra_instructions", {}).get("text")
+        return data
+
 
 class ConversationFile(BaseModel):
     status: Literal["success"] = "success"
