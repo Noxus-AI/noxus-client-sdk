@@ -255,7 +255,7 @@ async def test_update_conversation(
     try:
         # Update settings
         new_settings = ConversationSettings(
-            model=["gpt-3.5-turbo"],
+            model=["gpt-4o"],
             temperature=0.5,
             tools=[WebResearchTool()],
             max_tokens=1000,
@@ -266,7 +266,7 @@ async def test_update_conversation(
         )
 
         assert updated.name == "Updated Name"
-        assert updated.settings.model == ["gpt-3.5-turbo"]
+        assert updated.settings.model == ["gpt-4o"]
         assert updated.settings.temperature == 0.5
         assert len(updated.settings.tools) == 1
 
