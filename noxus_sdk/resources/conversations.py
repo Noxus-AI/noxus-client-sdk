@@ -92,11 +92,15 @@ class ConversationSettings(BaseModel):
     agent_flow_id: str | None = None
 
     @model_validator(mode="before")
-    def validate_extra_instructions(self, data: Any) -> Any:
-        if data.get("extra_instructions") is not None and isinstance(
-            data.get("extra_instructions"), dict
-        ):
-            data["extra_instructions"] = data.get("extra_instructions", {}).get("text")
+    @classmethod
+    def validate_extra_instructions(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if data.get("extra_instructions") is not None and isinstance(
+                data.get("extra_instructions"), dict
+            ):
+                data["extra_instructions"] = data.get("extra_instructions", {}).get(
+                    "text"
+                )
         return data
 
 
