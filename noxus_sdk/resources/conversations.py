@@ -88,18 +88,18 @@ class ConversationSettings(BaseModel):
     temperature: float
     max_tokens: int = 64000
     tools: list[AnyToolSettings]
+    persona: str | None = None
+    tone: str | None = None
     extra_instructions: str | None = None
     agent_flow_id: str | None = None
 
     @model_validator(mode="before")
     @classmethod
-    def validate_extra_instructions(cls, data: Any) -> Any:
-        if (
-            isinstance(data, dict)
-            and data.get("extra_instructions") is not None
-            and isinstance(data.get("extra_instructions"), dict)
-        ):
-            data["extra_instructions"] = data.get("extra_instructions", {}).get("text")
+    def validate_text_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            for field in ["persona", "tone", "extra_instructions"]:
+                if data.get(field) is not None and isinstance(data.get(field), dict):
+                    data[field] = data.get(field, {}).get("text")
         return data
 
 
