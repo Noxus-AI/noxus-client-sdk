@@ -128,6 +128,31 @@ class KnowledgeBaseDocument(BaseModel):
     error: dict | None = None
 
 
+class DocumentResult(BaseModel):
+    id: str
+    created_at: str
+    updated_at: str
+    group_id: str
+    kb_id: str
+    file_id: str | None = None
+    name: str
+    status: DocumentStatus
+    short_summary: str | None = None
+    summary: str | None = None
+    doc_type: str | None = None
+    doc_metadata: dict
+    prefix: str
+    m_source_type: str
+    m_source_metadata: dict | None = None
+
+
+class SearchResult(BaseModel):
+    score: float
+    content: str
+    source: str | None = None
+    document_source: DocumentResult
+
+
 class CreateDocument(BaseModel):
     name: str
     prefix: str = "/"
@@ -268,6 +293,22 @@ class KnowledgeBase(BaseResource):
             files=files_list,
             params={"prefix": prefix},
         )
+
+    def search(self, query: str, prefix: str = "/") -> builtins.list[SearchResult]:
+        response = self.client.post(
+            f"/v1/knowledge-bases/{self.id}/search",
+            params={"query": query, "prefix": prefix},
+        )
+        return [SearchResult(**result) for result in response]
+
+    async def asearch(
+        self, query: str, prefix: str = "/"
+    ) -> builtins.list[SearchResult]:
+        response = await self.client.apost(
+            f"/v1/knowledge-bases/{self.id}/search",
+            params={"query": query, "prefix": prefix},
+        )
+        return [SearchResult(**result) for result in response]
 
     def update_document(
         self, document_id: str, update: UpdateDocument
