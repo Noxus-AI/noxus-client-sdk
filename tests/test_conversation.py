@@ -124,44 +124,8 @@ async def test_chat(client: Client, conversation_settings: ConversationSettings)
         message = MessageRequest(content="Say hello back to me")
         response = await conversation.achat(message)
 
-        assert response.conversation_id == conversation.id
-        assert len(response.messages) >= 1
-
-        has_assistant_response = any(
-            any(part.get("role") == "assistant" for part in msg.message_parts)
-            for msg in response.messages
-        )
-        assert (
-            has_assistant_response
-        ), f"Expected assistant response in {response.messages}"
-
-    finally:
-        await client.conversations.adelete(conversation.id)
-
-
-@pytest.mark.anyio
-async def test_chat_returns_only_new_messages(
-    client: Client, conversation_settings: ConversationSettings
-):
-    conversation = await client.conversations.acreate(
-        name="Test Chat New Messages Only", settings=conversation_settings
-    )
-
-    try:
-        first_message = MessageRequest(content="Hello!")
-        await conversation.aadd_message(first_message)
-
-        all_messages_before = await conversation.aget_messages()
-        count_before = len(all_messages_before)
-
-        second_message = MessageRequest(content="How are you?")
-        chat_response = await conversation.achat(second_message)
-
-        assert chat_response.conversation_id == conversation.id
-        assert len(chat_response.messages) < count_before + 2
-
-        all_messages_after = await conversation.aget_messages()
-        assert len(all_messages_after) > count_before
+        assert response.id is not None
+        assert len(response.parts) >= 1
 
     finally:
         await client.conversations.adelete(conversation.id)
