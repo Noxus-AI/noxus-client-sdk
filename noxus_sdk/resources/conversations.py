@@ -226,11 +226,32 @@ class Conversation(BaseResource):
 
         return Message.model_validate(self.messages[-1])
 
+    def chat(self, message: MessageRequest) -> ChatResponse:
+        response = self.client.post(
+            f"/v1/conversations/{self.id}/chat",
+            body=message.model_dump(),
+            timeout=120,
+        )
+        return ChatResponse.model_validate(response)
+
+    async def achat(self, message: MessageRequest) -> ChatResponse:
+        response = await self.client.apost(
+            f"/v1/conversations/{self.id}/chat",
+            body=message.model_dump(),
+            timeout=120,
+        )
+        return ChatResponse.model_validate(response)
+
 
 class MessageEvent(BaseModel):
     role: str
     type: str
     content: str | None = None
+
+
+class ChatResponse(BaseModel):
+    conversation_id: str
+    messages: list[Message]
 
 
 class ConversationService(BaseService[Conversation]):
