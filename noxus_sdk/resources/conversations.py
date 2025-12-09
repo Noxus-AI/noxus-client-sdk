@@ -71,6 +71,18 @@ class WorkflowTool(ConversationTool):
     workflow_id: str
 
 
+class MemoryTool(ConversationTool):
+    """Tool that allows the agent to use memory"""
+
+    type: Literal["memory"] = "memory"
+
+
+class FileSystemTool(ConversationTool):
+    """Tool that allows the agent to access the file system"""
+
+    type: Literal["filesystem"] = "filesystem"
+
+
 AnyToolSettings = Annotated[
     WebResearchTool
     | NoxusQaTool
@@ -78,7 +90,9 @@ AnyToolSettings = Annotated[
     | KnowledgeBaseQaTool
     | WorkflowTool
     | HumanInTheLoopTool
-    | AttachFileTool,
+    | AttachFileTool
+    | MemoryTool
+    | FileSystemTool,
     Discriminator("type"),
 ]
 
