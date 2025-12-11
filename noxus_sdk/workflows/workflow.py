@@ -248,9 +248,18 @@ class Node(BaseModel):
         type_definition_is_list: bool = False,
     ) -> EdgePoint:
         if name is None:
-            if len(self.outputs) != 1:
-                raise ValueError("Multiple outputs found, please specify a name")
-            name = self.outputs[0].name
+            if len(self.outputs) > 2:
+                raise ValueError("Too many outputs found, please specify a name")
+            # Input / Output case
+            if len(self.outputs) == 1:
+                name = self.outputs[0].name
+            # Whichever is not the on_error connector
+            else:
+                name = (
+                    self.outputs[0].name
+                    if self.outputs[0].name != "on_error"
+                    else self.outputs[1].name
+                )
         i = {i.name: i for i in self.outputs}
         if name not in i:
             raise KeyError(f"Output {name} not found (possible: {list(i.keys())})")
