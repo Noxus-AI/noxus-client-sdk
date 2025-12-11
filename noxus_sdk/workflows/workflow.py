@@ -248,9 +248,18 @@ class Node(BaseModel):
         type_definition_is_list: bool = False,
     ) -> EdgePoint:
         if name is None:
-            if len(self.outputs) != 1:
-                raise ValueError("Multiple outputs found, please specify a name")
-            name = self.outputs[0].name
+            if len(self.outputs) > 2:
+                raise ValueError("Too many outputs found, please specify a name")
+            # Input / Output case
+            if len(self.outputs) == 1:
+                name = self.outputs[0].name
+            # Whichever is not the on_error connector
+            else:
+                name = (
+                    self.outputs[0].name
+                    if self.outputs[0].name != "on_error"
+                    else self.outputs[1].name
+                )
         i = {i.name: i for i in self.outputs}
         if name not in i:
             raise KeyError(f"Output {name} not found (possible: {list(i.keys())})")
@@ -512,8 +521,16 @@ class WorkflowDefinition(BaseModel):
 
     def link_many(self, *nodes: Node):
         for i in range(len(nodes) - 1):
-            assert len(nodes[i].outputs) == 1
-            if nodes[i].outputs[0].type == "variable_connector":
+            assert len(nodes[i].outputs) <= 2
+            if len(nodes[i].outputs) == 1:
+                _output = nodes[i].outputs[0]
+            else:
+                _output = (
+                    nodes[i].outputs[0]
+                    if nodes[i].outputs[0].name != "on_error"
+                    else nodes[i].outputs[1]
+                )
+            if _output.type == "variable_connector":
                 raise ValueError(
                     f"A key is required for variable_connector output so unable to link {nodes[i].type} to {nodes[i + 1].type} automatically"
                 )
