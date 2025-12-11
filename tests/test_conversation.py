@@ -115,6 +115,23 @@ async def test_conversation_messages(
 
 
 @pytest.mark.anyio
+async def test_chat(client: Client, conversation_settings: ConversationSettings):
+    conversation = await client.conversations.acreate(
+        name="Test Chat", settings=conversation_settings
+    )
+
+    try:
+        message = MessageRequest(content="Say hello back to me")
+        response = await conversation.achat(message)
+
+        assert response.id is not None
+        assert len(response.parts) >= 1
+
+    finally:
+        await client.conversations.adelete(conversation.id)
+
+
+@pytest.mark.anyio
 @pytest.mark.skip("yau")
 async def test_conversation_with_kb(client: Client, kb: KnowledgeBase, test_file):
     import asyncio
