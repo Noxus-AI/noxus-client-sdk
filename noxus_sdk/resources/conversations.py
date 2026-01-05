@@ -71,6 +71,18 @@ class WorkflowTool(ConversationTool):
     workflow_id: str
 
 
+class MemoryTool(ConversationTool):
+    """Tool that allows the agent to use memory"""
+
+    type: Literal["memory"] = "memory"
+
+
+class FileSystemTool(ConversationTool):
+    """Tool that allows the agent to access the file system"""
+
+    type: Literal["filesystem"] = "filesystem"
+
+
 AnyToolSettings = Annotated[
     WebResearchTool
     | NoxusQaTool
@@ -78,7 +90,9 @@ AnyToolSettings = Annotated[
     | KnowledgeBaseQaTool
     | WorkflowTool
     | HumanInTheLoopTool
-    | AttachFileTool,
+    | AttachFileTool
+    | MemoryTool
+    | FileSystemTool,
     Discriminator("type"),
 ]
 
@@ -132,6 +146,11 @@ class Message(BaseModel):
     id: UUID
     created_at: datetime
     message_parts: list[dict]
+
+
+class ChatMessage(BaseModel):
+    id: UUID
+    parts: list[dict]
 
 
 class Conversation(BaseResource):
@@ -225,6 +244,22 @@ class Conversation(BaseResource):
             raise ValueError("No response from the server")
 
         return Message.model_validate(self.messages[-1])
+
+    def chat(self, message: MessageRequest) -> ChatMessage:
+        response = self.client.post(
+            f"/v1/conversations/{self.id}/chat",
+            body=message.model_dump(),
+            timeout=120,
+        )
+        return ChatMessage.model_validate(response)
+
+    async def achat(self, message: MessageRequest) -> ChatMessage:
+        response = await self.client.apost(
+            f"/v1/conversations/{self.id}/chat",
+            body=message.model_dump(),
+            timeout=120,
+        )
+        return ChatMessage.model_validate(response)
 
 
 class MessageEvent(BaseModel):
