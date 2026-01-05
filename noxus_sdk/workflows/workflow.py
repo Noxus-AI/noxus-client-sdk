@@ -1,6 +1,6 @@
 import enum
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
 from pydantic.config import ConfigDict
@@ -112,7 +112,7 @@ class NodeDefinition(BaseModel):
     type: str
     title: str
     description: str
-    integrations: list[str]
+    integrations: Sequence[str | list[str]]
     inputs: list[dict]
     outputs: list[dict]
     config: dict[str, ConfigDefinition]
