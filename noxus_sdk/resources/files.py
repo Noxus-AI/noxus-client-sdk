@@ -1,10 +1,15 @@
-from uuid import UUID
+from __future__ import annotations
+
 from enum import Enum
-from pydantic import ConfigDict, BaseModel
-from datetime import datetime
+from typing import TYPE_CHECKING, BinaryIO
+
+from pydantic import BaseModel, ConfigDict
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from uuid import UUID
 
 from noxus_sdk.resources.base import BaseService
-from typing import BinaryIO
 
 
 class SourceType(str, Enum):
@@ -18,10 +23,11 @@ class SourceType(str, Enum):
     Github = "Github"
     Teams = "Teams"
     Sharepoint = "Sharepoint"
+    ServiceNow = "ServiceNow"
     Custom = "Custom"
 
     @classmethod
-    def get_by_value(cls, value) -> "SourceType":
+    def get_by_value(cls, value: str) -> SourceType:
         # Get enum member by value
         for member in cls:
             if member.value == value:
@@ -46,17 +52,17 @@ class File(BaseModel):
 
 class FileService(BaseService[File]):
     def save(self, fd: BinaryIO) -> File:
-        w = self.client.post(f"/v1/file", files={"file": fd})
+        w = self.client.post("/v1/file", files={"file": fd})
         return File.model_validate(w)
 
     async def asave(self, fd: BinaryIO) -> File:
-        w = await self.client.apost(f"/v1/file", files={"file": fd})
+        w = await self.client.apost("/v1/file", files={"file": fd})
         return File.model_validate(w)
 
     def get(self, file_id: str) -> bytes:
-        w = self.client._request("GET", f"/v1/file/{file_id}")  # noqa
+        w = self.client._request("GET", f"/v1/file/{file_id}")  # noqa: SLF001
         return w.content
 
     async def aget(self, file_id: str) -> bytes:
-        w = await self.client._arequest("GET", f"/v1/file/{file_id}")  # noqa
+        w = await self.client._arequest("GET", f"/v1/file/{file_id}")  # noqa: SLF001
         return w.content

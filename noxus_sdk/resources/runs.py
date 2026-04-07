@@ -1,14 +1,37 @@
-import asyncio
-import builtins
-import time
+from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+import asyncio
+import json
+import time
+from typing import TYPE_CHECKING, Any
+
+from pydantic import ConfigDict
 
 from noxus_sdk.resources.base import BaseResource, BaseService
 
+if TYPE_CHECKING:
+    import builtins
+    from collections.abc import AsyncIterator, Iterator
 
-class RunFailure(Exception):
+
+class RunFailureError(Exception):
     pass
+
+
+class RunEvent:
+    """A single event from a run's SSE stream."""
+
+    def __init__(self, *, type: str, data: dict[str, Any], redis_id: str | None = None):
+        self.type = type
+        self.data = data
+        self.redis_id = redis_id
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.data.get("workflow_status") in ("completed", "failed")
+
+    def __repr__(self) -> str:
+        return f"RunEvent(type={self.type!r}, data={self.data!r})"
 
 
 class Run(BaseResource):
@@ -25,59 +48,142 @@ class Run(BaseResource):
     created_at: str
     finished_at: str | None = None
     output: dict | None = None
-    workflow_definition: dict | None = None
 
-    def refresh(self) -> "Run":
+    def refresh(self) -> Run:
         response = self.client.get(f"/v1/workflows/{self.workflow_id}/runs/{self.id}")
         for key, value in response.items():
             if hasattr(self, key):
                 setattr(self, key, value)
         return self
 
-    async def arefresh(self) -> "Run":
+    async def arefresh(self) -> Run:
         response = await self.client.aget(
-            f"/v1/workflows/{self.workflow_id}/runs/{self.id}"
+            f"/v1/workflows/{self.workflow_id}/runs/{self.id}",
         )
         for key, value in response.items():
             if hasattr(self, key):
                 setattr(self, key, value)
         return self
 
-    def wait(self, interval: int = 5, output_only: bool = False):
-        while self.status not in ["failed", "completed", "awaiting_human_feedback"]:
-            time.sleep(interval)
-            self.refresh()
+    def stream(self, etag: str | None = None) -> Iterator[RunEvent]:
+        """Stream run events via SSE. Yields RunEvent objects until the run completes."""
+        params: dict[str, str] = {}
+        if etag:
+            params["etag"] = etag
+
+        for sse_event in self.client.event_stream(
+            f"/v1/runs/{self.id}/events",
+            params=params or None,
+        ):
+            if sse_event.event != "message":
+                continue
+            payload = json.loads(sse_event.data)
+            event = RunEvent(
+                type=payload.get("type", ""),
+                data=payload.get("data", {}),
+                redis_id=payload.get("redisId"),
+            )
+            yield event
+            if event.is_terminal:
+                return
+
+    async def astream(self, etag: str | None = None) -> AsyncIterator[RunEvent]:
+        """Stream run events via SSE (async). Yields RunEvent objects until the run completes."""
+        params: dict[str, str] = {}
+        if etag:
+            params["etag"] = etag
+
+        async for sse_event in self.client.aevent_stream(
+            f"/v1/runs/{self.id}/events",
+            params=params or None,
+        ):
+            if sse_event.event != "message":
+                continue
+            payload = json.loads(sse_event.data)
+            event = RunEvent(
+                type=payload.get("type", ""),
+                data=payload.get("data", {}),
+                redis_id=payload.get("redisId"),
+            )
+            yield event
+            if event.is_terminal:
+                return
+
+    def wait(
+        self,
+        interval: int = 5,
+        *,
+        output_only: bool = False,
+    ) -> Run | dict | None:
+        if self.status in ("failed", "completed", "awaiting_human_feedback"):
+            if self.status == "failed":
+                raise RunFailureError(self.status)
+            return self.output if output_only else self
+
+        # Try SSE stream first — no polling, instant notification
+        try:
+            for event in self.stream():
+                if event.is_terminal:
+                    break
+        except Exception:
+            # Fall back to polling if SSE fails (e.g. older server)
+            while self.status not in ("failed", "completed", "awaiting_human_feedback"):
+                time.sleep(interval)
+                self.refresh()
+
+        # Refresh to get final output/status
+        self.refresh()
 
         if self.status == "failed":
-            raise RunFailure(self.status)
+            raise RunFailureError(self.status)
 
         if output_only:
             return self.output
         return self
 
-    async def a_wait(self, interval: int = 5, output_only: bool = False):
-        while self.status not in ["failed", "completed", "awaiting_human_feedback"]:
-            await asyncio.sleep(interval)
-            await self.arefresh()
+    async def a_wait(
+        self,
+        interval: int = 5,
+        *,
+        output_only: bool = False,
+    ) -> Run | dict | None:
+        if self.status in ("failed", "completed", "awaiting_human_feedback"):
+            if self.status == "failed":
+                raise RunFailureError(self.status)
+            return self.output if output_only else self
+
+        # Try SSE stream first — no polling, instant notification
+        try:
+            async for event in self.astream():
+                if event.is_terminal:
+                    break
+        except Exception:
+            # Fall back to polling if SSE fails (e.g. older server)
+            while self.status not in ("failed", "completed", "awaiting_human_feedback"):
+                await asyncio.sleep(interval)
+                await self.arefresh()
+
+        # Refresh to get final output/status
+        await self.arefresh()
 
         if self.status == "failed":
-            raise RunFailure(self.status)
+            raise RunFailureError(self.status)
 
         if output_only:
             return self.output
         return self
 
-    def get_status(self):
+    def get_status(self) -> str:
         return self.status
 
 
 class RunService(BaseService[Run]):
     def get(self, workflow_id: str, run_id: str) -> Run:
-        response = self.client.get(f"/v1/workflows/{workflow_id}/run/{run_id}")
+        response = self.client.get(f"/v1/workflows/{workflow_id}/runs/{run_id}")
         return Run(client=self.client, **response)
 
     async def aget(self, workflow_id: str, run_id: str) -> Run:
-        response = await self.client.aget(f"/v1/workflows/{workflow_id}/run/{run_id}")
+        response = await self.client.aget(f"/v1/workflows/{workflow_id}/runs/{run_id}")
         return Run(client=self.client, **response)
 
     def list(self, workflow_id: str, page: int = 1, page_size: int = 10) -> list[Run]:
@@ -88,7 +194,10 @@ class RunService(BaseService[Run]):
         return [Run(client=self.client, **run) for run in response]
 
     async def alist(
-        self, workflow_id: str, page: int = 1, page_size: int = 10
+        self,
+        workflow_id: str,
+        page: int = 1,
+        page_size: int = 10,
     ) -> builtins.list[Run]:
         response = await self.client.apget(
             f"/v1/workflows/{workflow_id}/runs",

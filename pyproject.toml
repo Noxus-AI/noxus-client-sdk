@@ -58,12 +58,13 @@ ignore = [
     "S",
     "TID252",
     "TRY",
-    "UP038",
+    "PLC0415",
 ]
 exclude = ["tests/**"]
 
 [tool.ruff.lint.per-file-ignores]
 "examples/**" = ["T201"]
+"notebook/**" = ["T201", "W291", "W293", "RET504", "PLW0603", "PLW0604"]
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "session"

@@ -1,4 +1,5 @@
-from typing import TypeVar, Generic
+from typing import Generic, TypeVar
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from noxus_sdk.client import Client
@@ -12,5 +13,5 @@ class BaseResource(BaseModel):
 
 
 class BaseService(Generic[T]):
-    def __init__(self, client: "Client"):
+    def __init__(self, client: "Client") -> None:
         self.client = client

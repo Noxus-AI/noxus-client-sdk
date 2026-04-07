@@ -42,7 +42,8 @@ async def test_document_operations(kb: KnowledgeBase, test_file: Path):
     documents = await kb.alist_documents(status="uploaded")
     assert len(documents) == 1
     updated_doc = await kb.aupdate_document(
-        doc.id, UpdateDocument(prefix="/updated/path")
+        doc.id,
+        UpdateDocument(prefix="/updated/path"),
     )
     assert updated_doc.prefix == "/updated/path"
     assert updated_doc.id == doc.id
@@ -50,7 +51,7 @@ async def test_document_operations(kb: KnowledgeBase, test_file: Path):
     deleted_doc = await kb.adelete_document(doc.id)
     assert deleted_doc.id == doc.id
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="404 Not Found"):
         await kb.aget_document(doc.id)
 
 
@@ -97,7 +98,7 @@ async def test_kb_cleanup(client: Client):
     success = await kb.adelete()
     assert success is True
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="404 Not Found"):
         await kb.arefresh()
 
 

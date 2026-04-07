@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime  # noqa: TCH003
+from datetime import datetime  # noqa: TC003
 from typing import Annotated, Any, Literal, TYPE_CHECKING
 
 from uuid import UUID, uuid4
@@ -71,6 +71,103 @@ class WorkflowTool(ConversationTool):
     workflow_id: str
 
 
+class MemoryTool(ConversationTool):
+    """Tool that allows the agent to use memory"""
+
+    type: Literal["memory"] = "memory"
+
+
+class FileSystemTool(ConversationTool):
+    """Tool that allows the agent to access the file system"""
+
+    type: Literal["filesystem"] = "filesystem"
+
+
+class CodeExecutionTool(ConversationTool):
+    """Tool that allows the agent to run Python code in a sandbox"""
+
+    type: Literal["code_execution"] = "code_execution"
+    timeout: int = 120
+
+
+class AgentTool(ConversationTool):
+    """Tool that allows calling another agent as a co-worker"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["agent_tool"] = "agent_tool"
+    agent_id: str | None = None
+
+
+class ActionTool(ConversationTool):
+    """Tool that runs a custom action node"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["action"] = "action"
+
+
+class ChatflowTool(ConversationTool):
+    """Tool for chatflow execution"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["chatflow"] = "chatflow"
+
+
+class FlowTransitionTool(ConversationTool):
+    """Tool for flow transitions"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["flow_transition"] = "flow_transition"
+
+
+class ChatflowExtractionTool(ConversationTool):
+    """Tool for chatflow extraction"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["chatflow_extraction"] = "chatflow_extraction"
+
+
+class ChatflowTransitionTool(ConversationTool):
+    """Tool for chatflow transitions"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["chatflow_transition"] = "chatflow_transition"
+
+
+class SandboxTool(ConversationTool):
+    """Tool that provides sandboxed file and shell operations"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["sandbox"] = "sandbox"
+
+
+class ScheduleTool(ConversationTool):
+    """Tool for creating periodic and one-shot scheduled tasks"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["schedule_tool"] = "schedule_tool"
+
+
+class TodosTool(ConversationTool):
+    """Tool for in-conversation task tracking"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["todos"] = "todos"
+
+
+class SubagentTool(ConversationTool):
+    """Tool for delegating tasks to specialized subagents"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["subagent"] = "subagent"
+
+
+class AgentMemoryTool(ConversationTool):
+    """Tool for persistent agent memory across conversations"""
+
+    model_config = ConfigDict(extra="allow")
+    type: Literal["agent_memory"] = "agent_memory"
+
+
 AnyToolSettings = Annotated[
     WebResearchTool
     | NoxusQaTool
@@ -78,7 +175,21 @@ AnyToolSettings = Annotated[
     | KnowledgeBaseQaTool
     | WorkflowTool
     | HumanInTheLoopTool
-    | AttachFileTool,
+    | AttachFileTool
+    | MemoryTool
+    | FileSystemTool
+    | CodeExecutionTool
+    | AgentTool
+    | ActionTool
+    | ChatflowTool
+    | FlowTransitionTool
+    | ChatflowExtractionTool
+    | ChatflowTransitionTool
+    | SandboxTool
+    | ScheduleTool
+    | TodosTool
+    | SubagentTool
+    | AgentMemoryTool,
     Discriminator("type"),
 ]
 
@@ -98,8 +209,20 @@ class ConversationSettings(BaseModel):
     def validate_text_fields(cls, data: Any) -> Any:
         if isinstance(data, dict):
             for field in ["persona", "tone", "extra_instructions"]:
-                if data.get(field) is not None and isinstance(data.get(field), dict):
-                    data[field] = data.get(field, {}).get("text")
+                value = data.get(field)
+                if value is None:
+                    continue
+                if isinstance(value, dict):
+                    data[field] = value.get("text")
+                elif isinstance(value, list):
+                    data[field] = (
+                        "".join(
+                            part.get("text", "")
+                            for part in value
+                            if isinstance(part, dict)
+                        )
+                        or None
+                    )
         return data
 
 
@@ -132,6 +255,11 @@ class Message(BaseModel):
     id: UUID
     created_at: datetime
     message_parts: list[dict]
+
+
+class ChatMessage(BaseModel):
+    id: UUID
+    parts: list[dict]
 
 
 class Conversation(BaseResource):
@@ -178,7 +306,6 @@ class Conversation(BaseResource):
         response = await self.client.apost(
             f"/v1/conversations/{self.id}",
             body=message.model_dump(),
-            timeout=30,
         )
         self._update_w_response(response)
         return self
@@ -217,7 +344,6 @@ class Conversation(BaseResource):
         response = self.client.post(
             f"/v1/conversations/{self.id}",
             body=message.model_dump(),
-            timeout=30,
         )
         self._update_w_response(response)
 
@@ -225,6 +351,20 @@ class Conversation(BaseResource):
             raise ValueError("No response from the server")
 
         return Message.model_validate(self.messages[-1])
+
+    def chat(self, message: MessageRequest) -> ChatMessage:
+        response = self.client.post(
+            f"/v1/conversations/{self.id}/chat",
+            body=message.model_dump(),
+        )
+        return ChatMessage.model_validate(response)
+
+    async def achat(self, message: MessageRequest) -> ChatMessage:
+        response = await self.client.apost(
+            f"/v1/conversations/{self.id}/chat",
+            body=message.model_dump(),
+        )
+        return ChatMessage.model_validate(response)
 
 
 class MessageEvent(BaseModel):

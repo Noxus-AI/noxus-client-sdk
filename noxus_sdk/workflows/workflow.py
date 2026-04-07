@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 import enum
 import uuid
+from collections.abc import Sequence  # noqa: TC003 — needed at runtime for Pydantic field
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
 from pydantic.config import ConfigDict
 
-from noxus_sdk.client import Client
+from noxus_sdk.client import Client  # noqa: TC001 — needed at runtime for Pydantic field
 
 if TYPE_CHECKING:
-    from noxus_sdk.resources.runs import Run
+    from collections.abc import AsyncIterator, Iterator
+
+    from noxus_sdk.resources.runs import Run, RunEvent
     from noxus_sdk.resources.workflows import WorkflowVersion
 
 
@@ -112,7 +117,9 @@ class NodeDefinition(BaseModel):
     type: str
     title: str
     description: str
-    integrations: list[str]
+    small_description: str | None = None
+    category: str | None = None
+    integrations: Sequence[str | list[str]]
     inputs: list[dict]
     outputs: list[dict]
     config: dict[str, ConfigDefinition]
@@ -222,9 +229,9 @@ class Node(BaseModel):
             if key not in connector_keys:
                 connector_keys.append(key)
             if input.type == "variable_type_size_connector":
-                assert (
-                    type_definition is not None
-                ), f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                assert type_definition is not None, (
+                    f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                )
                 type_definitions = connector_inputs[name].get("type_definitions", {})
                 choices = connector_inputs[name].get("choices", [])
                 if key not in type_definitions:
@@ -248,9 +255,18 @@ class Node(BaseModel):
         type_definition_is_list: bool = False,
     ) -> EdgePoint:
         if name is None:
-            if len(self.outputs) != 1:
-                raise ValueError("Multiple outputs found, please specify a name")
-            name = self.outputs[0].name
+            if len(self.outputs) > 2:
+                raise ValueError("Too many outputs found, please specify a name")
+            # Input / Output case
+            if len(self.outputs) == 1:
+                name = self.outputs[0].name
+            # Whichever is not the on_error connector
+            else:
+                name = (
+                    self.outputs[0].name
+                    if self.outputs[0].name != "on_error"
+                    else self.outputs[1].name
+                )
         i = {i.name: i for i in self.outputs}
         if name not in i:
             raise KeyError(f"Output {name} not found (possible: {list(i.keys())})")
@@ -270,9 +286,9 @@ class Node(BaseModel):
             if key not in connector_keys:
                 connector_keys.append(key)
             if output.type == "variable_type_size_connector":
-                assert (
-                    type_definition is not None
-                ), f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                assert type_definition is not None, (
+                    f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                )
                 type_definitions = connector_outputs[name].get("type_definitions", {})
                 choices = connector_outputs[name].get("choices", [])
                 if key not in type_definitions:
@@ -290,7 +306,7 @@ class Node(BaseModel):
             )
         return EdgePoint(node_id=output.node_id, connector_name=output.name, key=None)
 
-    def create(self, x: int, y: int) -> "Node":
+    def create(self, x: int, y: int) -> Node:
         node_type = NODE_TYPES.get(self.type)
         assert node_type, f"Node type {self.type} not found"
         self.config_definition = node_type.config
@@ -315,7 +331,7 @@ class Node(BaseModel):
         for key, value in kwargs.items():
             if key not in self.config_definition:
                 raise ConfigError(
-                    f"Invalid config key: {key} (possible: {[k for k,v in self.config_definition.items() if v.visible]})"
+                    f"Invalid config key: {key} (possible: {[k for k, v in self.config_definition.items() if v.visible]})"
                 )
             self.config_definition[key].check_value(key, value)
             self.node_config[key] = value
@@ -340,8 +356,8 @@ class WorkflowDefinition(BaseModel):
     group_id: str | None = Field(default=None, exclude=True)
     name: str = "Untitled Workflow"
     type: str = "flow"
-    nodes: list["Node"] = []
-    edges: list["Edge"] = []
+    nodes: list[Node] = []
+    edges: list[Edge] = []
     x: int = 0
     error_handler: uuid.UUID | None = None
 
@@ -374,14 +390,14 @@ class WorkflowDefinition(BaseModel):
         self.client = client
         return self
 
-    def refresh(self) -> "WorkflowDefinition":
+    def refresh(self) -> WorkflowDefinition:
         if not self.client:
             raise ValueError("Client not set")
         response = self.client.get(f"/v1/workflows/{self.id}")
         self.refresh_from_data(client=self.client, **response)
         return self
 
-    async def arefresh(self) -> "WorkflowDefinition":
+    async def arefresh(self) -> WorkflowDefinition:
         if not self.client:
             raise ValueError("Client not set")
         response = await self.client.aget(f"/v1/workflows/{self.id}")
@@ -389,8 +405,11 @@ class WorkflowDefinition(BaseModel):
         return self
 
     def run(
-        self, body: dict[str, Any], workflow_version_id: uuid.UUID | str | None = None
-    ) -> "Run":
+        self,
+        body: dict[str, Any],
+        workflow_version_id: uuid.UUID | str | None = None,
+        callback_url: str | None = None,
+    ) -> Run:
         from noxus_sdk.resources.runs import Run
 
         if not self.client:
@@ -399,13 +418,18 @@ class WorkflowDefinition(BaseModel):
         req: dict[str, Any] = {"input": body}
         if workflow_version_id:
             req["workflow_version_id"] = str(workflow_version_id)
+        if callback_url:
+            req["callback_url"] = callback_url
 
         response = self.client.post(url, req)
         return Run(client=self.client, **response)
 
     async def arun(
-        self, body: dict[str, Any], workflow_version_id: uuid.UUID | str | None = None
-    ) -> "Run":
+        self,
+        body: dict[str, Any],
+        workflow_version_id: uuid.UUID | str | None = None,
+        callback_url: str | None = None,
+    ) -> Run:
         if not self.client:
             raise ValueError("Client not set")
         from noxus_sdk.resources.runs import Run
@@ -413,8 +437,29 @@ class WorkflowDefinition(BaseModel):
         req: dict[str, Any] = {"input": body}
         if workflow_version_id:
             req["workflow_version_id"] = str(workflow_version_id)
+        if callback_url:
+            req["callback_url"] = callback_url
         response = await self.client.apost(f"/v1/workflows/{self.id}/runs", req)
         return Run(client=self.client, **response)
+
+    def run_and_stream(
+        self,
+        body: dict[str, Any],
+        workflow_version_id: uuid.UUID | str | None = None,
+    ) -> Iterator[RunEvent]:
+        """Create a run and stream its events via SSE until completion."""
+        run = self.run(body, workflow_version_id=workflow_version_id)
+        yield from run.stream()
+
+    async def arun_and_stream(
+        self,
+        body: dict[str, Any],
+        workflow_version_id: uuid.UUID | str | None = None,
+    ) -> AsyncIterator[RunEvent]:
+        """Create a run and stream its events via SSE until completion (async)."""
+        run = await self.arun(body, workflow_version_id=workflow_version_id)
+        async for event in run.astream():
+            yield event
 
     def update(self, force: bool = False):
         if not self.client:
@@ -457,7 +502,7 @@ class WorkflowDefinition(BaseModel):
         version_id: str,
         name: str,
         description: str | None,
-    ) -> "WorkflowVersion":
+    ) -> WorkflowVersion:
         if not self.client:
             raise ValueError("Client not set")
         return self.client.workflows.update_version(
@@ -469,19 +514,19 @@ class WorkflowDefinition(BaseModel):
         version_id: str,
         name: str,
         description: str | None,
-    ) -> "WorkflowVersion":
+    ) -> WorkflowVersion:
         if not self.client:
             raise ValueError("Client not set")
         return await self.client.workflows.aupdate_version(
             self.id, version_id, name, description, self
         )
 
-    def list_versions(self) -> list["WorkflowVersion"]:
+    def list_versions(self) -> list[WorkflowVersion]:
         if not self.client:
             raise ValueError("Client not set")
         return self.client.workflows.list_versions(self.id)
 
-    async def alist_versions(self) -> list["WorkflowVersion"]:
+    async def alist_versions(self) -> list[WorkflowVersion]:
         if not self.client:
             raise ValueError("Client not set")
         return await self.client.workflows.alist_versions(self.id)
@@ -497,7 +542,7 @@ class WorkflowDefinition(BaseModel):
             "ChatAgentNode",
         ]
 
-    def node(self, name) -> "Node":
+    def node(self, name) -> Node:
         self.verify_name_legal(name)
         self.x += 350
         n = Node(id=str(uuid.uuid4()), type=name)
@@ -505,15 +550,23 @@ class WorkflowDefinition(BaseModel):
         self.nodes.append(n)
         return n
 
-    def link(self, from_node: EdgePoint, to_node: EdgePoint) -> "Edge":
+    def link(self, from_node: EdgePoint, to_node: EdgePoint) -> Edge:
         e = Edge(id=str(uuid.uuid4()), from_id=from_node, to_id=to_node)
         self.edges.append(e)
         return e
 
     def link_many(self, *nodes: Node):
         for i in range(len(nodes) - 1):
-            assert len(nodes[i].outputs) == 1
-            if nodes[i].outputs[0].type == "variable_connector":
+            assert len(nodes[i].outputs) <= 2
+            if len(nodes[i].outputs) == 1:
+                _output = nodes[i].outputs[0]
+            else:
+                _output = (
+                    nodes[i].outputs[0]
+                    if nodes[i].outputs[0].name != "on_error"
+                    else nodes[i].outputs[1]
+                )
+            if _output.type == "variable_connector":
                 raise ValueError(
                     f"A key is required for variable_connector output so unable to link {nodes[i].type} to {nodes[i + 1].type} automatically"
                 )
