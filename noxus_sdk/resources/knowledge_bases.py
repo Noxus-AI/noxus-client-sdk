@@ -273,7 +273,7 @@ class KnowledgeBase(BaseResource):
             with open(str(file), "rb") as f:
                 files_list.append(("files", (Path(file).name, f.read(), None)))
 
-        return self.client.post(
+        return self.client.post(  # type: ignore[return-value]
             f"/v1/knowledge-bases/{self.id}/upload_train",
             files=files_list,
             params={"prefix": prefix},
@@ -288,7 +288,7 @@ class KnowledgeBase(BaseResource):
                 content = await f.read()
                 files_list.append(("files", (Path(file).name, content, None)))
 
-        return await self.client.apost(
+        return await self.client.apost(  # type: ignore[return-value]
             f"/v1/knowledge-bases/{self.id}/upload_train",
             files=files_list,
             params={"prefix": prefix},
@@ -594,7 +594,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
     def train_document(
         self, knowledge_base_id: str, source: Source, prefix: str = "/"
     ) -> builtins.list[RunID]:
-        return self.client.post(
+        return self.client.post(  # type: ignore[return-value]
             f"/v1/knowledge-bases/{knowledge_base_id}/generic_train",
             body=source.model_dump(),
             params={"prefix": prefix},
@@ -603,7 +603,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
     async def atrain_document(
         self, knowledge_base_id: str, source: Source, prefix: str = "/"
     ) -> builtins.list[RunID]:
-        return await self.client.apost(
+        return await self.client.apost(  # type: ignore[return-value]
             f"/v1/knowledge-bases/{knowledge_base_id}/generic_train",
             body=source.model_dump(),
             params={"prefix": prefix},
@@ -620,7 +620,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
             with open(str(file), "rb") as f:
                 files_list.append(("files", (Path(file).name, f.read(), None)))
 
-        return self.client.post(
+        return self.client.post(  # type: ignore[return-value]
             f"/v1/knowledge-bases/{knowledge_base_id}/upload_train",
             files=files_list,
             params={"prefix": prefix},
@@ -638,7 +638,7 @@ class KnowledgeBaseService(BaseService[KnowledgeBase]):
                 content = await f.read()
                 files_list.append(("files", (Path(file).name, content, None)))
 
-        return await self.client.apost(
+        return await self.client.apost(  # type: ignore[return-value]
             f"/v1/knowledge-bases/{knowledge_base_id}/upload_train",
             files=files_list,
             params={"prefix": prefix},

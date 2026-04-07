@@ -18,14 +18,14 @@ class AgentFlowDefinition(WorkflowDefinition):
         ]:
             raise ValueError(f"Invalid node name: {name}")
 
-    def update(self, *, force: bool = False) -> "AgentFlowDefinition":
+    def update(self, force: bool = False) -> "AgentFlowDefinition":
         if not self.client:
             raise ValueError("Client not set")
         w = self.client.agentflows.update(self.id, self, force=force)
         self.refresh_from_data(client=self.client, **w.model_dump())
         return w
 
-    async def aupdate(self, *, force: bool = False) -> "AgentFlowDefinition":
+    async def aupdate(self, force: bool = False) -> "AgentFlowDefinition":
         if not self.client:
             raise ValueError("Client not set")
         w = await self.client.agentflows.aupdate(self.id, self, force=force)
