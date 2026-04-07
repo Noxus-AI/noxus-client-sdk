@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime  # noqa: TCH003
+from datetime import datetime  # noqa: TC003
 from typing import Annotated, Any, Literal, TYPE_CHECKING
 
 from uuid import UUID, uuid4

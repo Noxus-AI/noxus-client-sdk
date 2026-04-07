@@ -227,9 +227,9 @@ class Node(BaseModel):
             if key not in connector_keys:
                 connector_keys.append(key)
             if input.type == "variable_type_size_connector":
-                assert (
-                    type_definition is not None
-                ), f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                assert type_definition is not None, (
+                    f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                )
                 type_definitions = connector_inputs[name].get("type_definitions", {})
                 choices = connector_inputs[name].get("choices", [])
                 if key not in type_definitions:
@@ -284,9 +284,9 @@ class Node(BaseModel):
             if key not in connector_keys:
                 connector_keys.append(key)
             if output.type == "variable_type_size_connector":
-                assert (
-                    type_definition is not None
-                ), f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                assert type_definition is not None, (
+                    f"type_definition is required for variable_type_size_connector ({self.type}.{name})"
+                )
                 type_definitions = connector_outputs[name].get("type_definitions", {})
                 choices = connector_outputs[name].get("choices", [])
                 if key not in type_definitions:
