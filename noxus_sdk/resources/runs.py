@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from typing import TYPE_CHECKING, Any, AsyncIterator, Iterator
+from typing import TYPE_CHECKING, Any
 
 from pydantic import ConfigDict
 
@@ -11,6 +11,7 @@ from noxus_sdk.resources.base import BaseResource, BaseService
 
 if TYPE_CHECKING:
     import builtins
+    from collections.abc import AsyncIterator, Iterator
 
 
 class RunFailureError(Exception):

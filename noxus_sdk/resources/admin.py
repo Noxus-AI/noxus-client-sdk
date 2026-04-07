@@ -50,7 +50,7 @@ class AdminService(BaseService[Workspace]):
         try:
             response = self.client.get("/v1/admin/me")
             return ApiKey(client=self.client, **response)
-        except Exception:  # noqa: BLE001
+        except Exception:
             return ApiKey(
                 client=self.client,
                 id="",
@@ -63,7 +63,7 @@ class AdminService(BaseService[Workspace]):
         try:
             response = await self.client.aget("/v1/admin/me")
             return ApiKey(client=self.client, **response)
-        except Exception:  # noqa: BLE001
+        except Exception:
             return ApiKey(
                 client=self.client,
                 id="",

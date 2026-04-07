@@ -91,7 +91,7 @@ class Requester:
         headers: dict | None = None,
         params: dict | None = None,
         timeout: int | None = None,
-    ) -> Any:  # noqa: ANN401
+    ) -> Any:
         return await self.arequest(
             "GET",
             url,
@@ -132,7 +132,7 @@ class Requester:
     async def apost(
         self,
         url: str,
-        body: Any | None = None,  # noqa: ANN401
+        body: Any | None = None,
         headers: dict | None = None,
         files: RequestFiles = None,
         params: dict | None = None,
@@ -151,7 +151,7 @@ class Requester:
     async def apatch(
         self,
         url: str,
-        body: Any,  # noqa: ANN401
+        body: Any,
         headers: dict | None = None,
         timeout: int | None = None,
         params: dict | None = None,
@@ -300,7 +300,7 @@ class Requester:
         headers: dict | None = None,
         params: dict | None = None,
         timeout: int | None = None,
-    ) -> Any:  # noqa: ANN401
+    ) -> Any:
         return self.request("GET", url, headers=headers, params=params, timeout=timeout)
 
     def pget(
@@ -335,11 +335,11 @@ class Requester:
     def patch(
         self,
         url: str,
-        body: Any,  # noqa: ANN401
+        body: Any,
         headers: dict | None = None,
         timeout: int | None = None,
         params: dict | None = None,
-    ) -> Any:  # noqa: ANN401
+    ) -> Any:
         return self.request(
             "PATCH",
             url,
@@ -352,12 +352,12 @@ class Requester:
     def post(
         self,
         url: str,
-        body: Any | None = None,  # noqa: ANN401
+        body: Any | None = None,
         headers: dict | None = None,
         files: RequestFiles = None,
         params: dict | None = None,
         timeout: int | None = None,
-    ) -> Any:  # noqa: ANN401
+    ) -> Any:
         return self.request(
             "POST",
             url,
@@ -373,7 +373,7 @@ class Requester:
         url: str,
         headers: dict | None = None,
         timeout: int | None = None,
-    ) -> Any:  # noqa: ANN401
+    ) -> Any:
         return self.request("DELETE", url, headers=headers, timeout=timeout)
 
 
