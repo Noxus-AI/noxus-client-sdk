@@ -225,10 +225,10 @@ async def test_agent_with_all_tool_types(client: Client):
     agent = await client.agents.acreate(name="Multi-Tool Agent", settings=settings)
 
     try:
-        # Verify all tools were set
-        assert len(agent.definition.tools) == 5
+        # Verify expected tools are present (backend may add default tools)
+        assert len(agent.definition.tools) >= 5
 
-        # Check if all tool types are present
+        # Check if all explicitly-set tool types are present
         tool_types = [tool.type for tool in agent.definition.tools]
         assert "web_research" in tool_types
         assert "noxus_qa" in tool_types
