@@ -1,5 +1,4 @@
 import os
-import tempfile
 import uuid
 from pathlib import Path
 
@@ -34,10 +33,10 @@ def workspace_client():
                     workspace.delete()
             fn.touch()
 
-    yield client
+    return client
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def api_key(workspace_client: Client):
     workspace = workspace_client.admin.create_workspace(f"sdk-{uuid.uuid4()}")
     api_key = workspace.add_api_key("test_key")
@@ -48,7 +47,8 @@ def api_key(workspace_client: Client):
 @pytest.fixture
 def client(api_key: str):
     return Client(
-        api_key, base_url=os.environ.get("NOXUS_BASE_URL", "https://backend.noxus.ai")
+        api_key,
+        base_url=os.environ.get("NOXUS_BASE_URL", "https://backend.noxus.ai"),
     )
 
 
@@ -79,7 +79,7 @@ async def kb(client: Client, test_file: Path):
 
     yield kb
 
-    try:  # noqa: SIM105
+    try:
         await kb.adelete()
     except Exception:
         pass

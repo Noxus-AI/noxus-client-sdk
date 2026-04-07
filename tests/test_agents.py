@@ -5,25 +5,18 @@ import pytest
 from noxus_sdk.client import Client
 from noxus_sdk.resources.assistants import (
     AgentSettings,
+)
+from noxus_sdk.resources.conversations import (
+    ConversationSettings,
     KnowledgeBaseQaTool,
     KnowledgeBaseSelectorTool,
+    MessageRequest,
     NoxusQaTool,
     WebResearchTool,
     WorkflowTool,
 )
-from noxus_sdk.resources.conversations import (
-    ConversationSettings,
-    MessageRequest,
-)
-from noxus_sdk.resources.knowledge_bases import (
-    KBConfigV3,
-    KnowledgeBaseIngestion,
-    KnowledgeBaseRetrieval,
-    KnowledgeBaseSettings,
-)
-from noxus_sdk.resources.workflows import (
-    WorkflowDefinition,
-)
+from noxus_sdk.resources.knowledge_bases import KBConfigV3
+from noxus_sdk.resources.workflows import WorkflowDefinition
 
 
 @pytest.fixture
@@ -117,7 +110,9 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
         )
 
         updated = await client.agents.aupdate(
-            agent.id, name="Updated Name", settings=new_settings
+            agent.id,
+            name="Updated Name",
+            settings=new_settings,
         )
 
         assert updated.name == "Updated Name"
@@ -138,7 +133,8 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
             max_tokens=300,
         )
         result = instance_updated.update(
-            name="Instance Updated", settings=instance_settings
+            name="Instance Updated",
+            settings=instance_settings,
         )
 
         assert result.name == "Instance Updated"
@@ -157,16 +153,19 @@ async def test_update_agent(client: Client, agent_settings: AgentSettings):
 
 @pytest.mark.anyio
 async def test_create_conversation_with_agent(
-    client: Client, agent_settings: AgentSettings
+    client: Client,
+    agent_settings: AgentSettings,
 ):
     # Create an agent
     agent = await client.agents.acreate(
-        name="Conversation Agent", settings=agent_settings
+        name="Conversation Agent",
+        settings=agent_settings,
     )
 
     # Create a conversation with the agent
     conversation = await client.conversations.acreate(
-        name="Agent Conversation", agent_id=agent.id
+        name="Agent Conversation",
+        agent_id=agent.id,
     )
     try:
         assert conversation.name == "Agent Conversation"
@@ -289,7 +288,9 @@ def test_synchronous_agent_operations(client: Client, agent_settings: AgentSetti
             max_tokens=100,
         )
         updated = client.agents.update(
-            agent_id=agent.id, name="Updated Sync Agent", settings=updated_settings
+            agent_id=agent.id,
+            name="Updated Sync Agent",
+            settings=updated_settings,
         )
         assert updated.name == "Updated Sync Agent"
         assert updated.definition.temperature == 0.5
@@ -347,7 +348,8 @@ async def test_agent_run_workflow(client: Client):
 
         # Create conversation
         conversation = await client.conversations.acreate(
-            name="Workflow Conversation", agent_id=agent.id
+            name="Workflow Conversation",
+            agent_id=agent.id,
         )
 
         # Send message

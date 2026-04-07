@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import enum
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, AsyncIterator, Iterator, Sequence
 
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
 from pydantic.config import ConfigDict
@@ -8,7 +10,7 @@ from pydantic.config import ConfigDict
 from noxus_sdk.client import Client
 
 if TYPE_CHECKING:
-    from noxus_sdk.resources.runs import Run
+    from noxus_sdk.resources.runs import Run, RunEvent
     from noxus_sdk.resources.workflows import WorkflowVersion
 
 
@@ -112,7 +114,9 @@ class NodeDefinition(BaseModel):
     type: str
     title: str
     description: str
-    integrations: list[str]
+    small_description: str | None = None
+    category: str | None = None
+    integrations: Sequence[str | list[str]]
     inputs: list[dict]
     outputs: list[dict]
     config: dict[str, ConfigDefinition]
@@ -248,9 +252,18 @@ class Node(BaseModel):
         type_definition_is_list: bool = False,
     ) -> EdgePoint:
         if name is None:
-            if len(self.outputs) != 1:
-                raise ValueError("Multiple outputs found, please specify a name")
-            name = self.outputs[0].name
+            if len(self.outputs) > 2:
+                raise ValueError("Too many outputs found, please specify a name")
+            # Input / Output case
+            if len(self.outputs) == 1:
+                name = self.outputs[0].name
+            # Whichever is not the on_error connector
+            else:
+                name = (
+                    self.outputs[0].name
+                    if self.outputs[0].name != "on_error"
+                    else self.outputs[1].name
+                )
         i = {i.name: i for i in self.outputs}
         if name not in i:
             raise KeyError(f"Output {name} not found (possible: {list(i.keys())})")
@@ -315,7 +328,7 @@ class Node(BaseModel):
         for key, value in kwargs.items():
             if key not in self.config_definition:
                 raise ConfigError(
-                    f"Invalid config key: {key} (possible: {[k for k,v in self.config_definition.items() if v.visible]})"
+                    f"Invalid config key: {key} (possible: {[k for k, v in self.config_definition.items() if v.visible]})"
                 )
             self.config_definition[key].check_value(key, value)
             self.node_config[key] = value
@@ -389,7 +402,10 @@ class WorkflowDefinition(BaseModel):
         return self
 
     def run(
-        self, body: dict[str, Any], workflow_version_id: uuid.UUID | str | None = None
+        self,
+        body: dict[str, Any],
+        workflow_version_id: uuid.UUID | str | None = None,
+        callback_url: str | None = None,
     ) -> "Run":
         from noxus_sdk.resources.runs import Run
 
@@ -399,12 +415,17 @@ class WorkflowDefinition(BaseModel):
         req: dict[str, Any] = {"input": body}
         if workflow_version_id:
             req["workflow_version_id"] = str(workflow_version_id)
+        if callback_url:
+            req["callback_url"] = callback_url
 
         response = self.client.post(url, req)
         return Run(client=self.client, **response)
 
     async def arun(
-        self, body: dict[str, Any], workflow_version_id: uuid.UUID | str | None = None
+        self,
+        body: dict[str, Any],
+        workflow_version_id: uuid.UUID | str | None = None,
+        callback_url: str | None = None,
     ) -> "Run":
         if not self.client:
             raise ValueError("Client not set")
@@ -413,8 +434,29 @@ class WorkflowDefinition(BaseModel):
         req: dict[str, Any] = {"input": body}
         if workflow_version_id:
             req["workflow_version_id"] = str(workflow_version_id)
+        if callback_url:
+            req["callback_url"] = callback_url
         response = await self.client.apost(f"/v1/workflows/{self.id}/runs", req)
         return Run(client=self.client, **response)
+
+    def run_and_stream(
+        self,
+        body: dict[str, Any],
+        workflow_version_id: uuid.UUID | str | None = None,
+    ) -> Iterator[RunEvent]:
+        """Create a run and stream its events via SSE until completion."""
+        run = self.run(body, workflow_version_id=workflow_version_id)
+        yield from run.stream()
+
+    async def arun_and_stream(
+        self,
+        body: dict[str, Any],
+        workflow_version_id: uuid.UUID | str | None = None,
+    ) -> AsyncIterator[RunEvent]:
+        """Create a run and stream its events via SSE until completion (async)."""
+        run = await self.arun(body, workflow_version_id=workflow_version_id)
+        async for event in run.astream():
+            yield event
 
     def update(self, force: bool = False):
         if not self.client:
@@ -512,8 +554,16 @@ class WorkflowDefinition(BaseModel):
 
     def link_many(self, *nodes: Node):
         for i in range(len(nodes) - 1):
-            assert len(nodes[i].outputs) == 1
-            if nodes[i].outputs[0].type == "variable_connector":
+            assert len(nodes[i].outputs) <= 2
+            if len(nodes[i].outputs) == 1:
+                _output = nodes[i].outputs[0]
+            else:
+                _output = (
+                    nodes[i].outputs[0]
+                    if nodes[i].outputs[0].name != "on_error"
+                    else nodes[i].outputs[1]
+                )
+            if _output.type == "variable_connector":
                 raise ValueError(
                     f"A key is required for variable_connector output so unable to link {nodes[i].type} to {nodes[i + 1].type} automatically"
                 )
