@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import enum
 import uuid
+from collections.abc import Sequence  # noqa: TC003 — needed at runtime for Pydantic field
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
 from pydantic.config import ConfigDict
 
-if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator, Sequence
+from noxus_sdk.client import Client  # noqa: TC001 — needed at runtime for Pydantic field
 
-    from noxus_sdk.client import Client
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterator
+
     from noxus_sdk.resources.runs import Run, RunEvent
     from noxus_sdk.resources.workflows import WorkflowVersion
 
