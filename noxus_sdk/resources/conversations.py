@@ -11,7 +11,8 @@ from pydantic import (
     ConfigDict,
     Discriminator,
     Field,
-    ValidationError,
+    Tag,
+    field_validator,
     model_validator,
 )
 
@@ -21,10 +22,39 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
 
 
+def _tiptap_to_text(value: str | dict[str, str] | list[dict[str, str]] | None) -> str | None:
+    """Convert a TipTap rich-text payload (or plain string) to a plain string."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value or None
+    if isinstance(value, dict):
+        text = value.get("text", "")
+        return text or None
+    if isinstance(value, list):
+        return (
+            "".join(
+                part.get("text", "")
+                for part in value
+                if isinstance(part, dict)
+            )
+            or None
+        )
+    return None
+
+
 class ConversationTool(BaseModel):
+    """Base tool — also the fallback for unknown tool types."""
+
+    model_config = ConfigDict(extra="allow")
     type: str
     enabled: bool = True
     extra_instructions: str | None = None
+
+    @field_validator("extra_instructions", mode="before")
+    @classmethod
+    def coerce_extra_instructions(cls, v: str | dict[str, str] | list[dict[str, str]] | None) -> str | None:
+        return _tiptap_to_text(v)
 
 
 class WebResearchTool(ConversationTool):
@@ -168,29 +198,66 @@ class AgentMemoryTool(ConversationTool):
     type: Literal["agent_memory"] = "agent_memory"
 
 
+_TOOL_TYPE_MAP: dict[str, type[ConversationTool]] = {
+    "web_research": WebResearchTool,
+    "noxus_qa": NoxusQaTool,
+    "kb_selector": KnowledgeBaseSelectorTool,
+    "kb_qa": KnowledgeBaseQaTool,
+    "workflow": WorkflowTool,
+    "human_in_the_loop": HumanInTheLoopTool,
+    "attach_file": AttachFileTool,
+    "memory": MemoryTool,
+    "filesystem": FileSystemTool,
+    "code_execution": CodeExecutionTool,
+    "agent_tool": AgentTool,
+    "action": ActionTool,
+    "chatflow": ChatflowTool,
+    "flow_transition": FlowTransitionTool,
+    "chatflow_extraction": ChatflowExtractionTool,
+    "chatflow_transition": ChatflowTransitionTool,
+    "sandbox": SandboxTool,
+    "schedule_tool": ScheduleTool,
+    "todos": TodosTool,
+    "subagent": SubagentTool,
+    "agent_memory": AgentMemoryTool,
+}
+
+
+def _tool_discriminator(v: Any) -> str:
+    """Resolve tool type, falling back to 'unknown' for new backend tool types."""
+    if isinstance(v, dict):
+        tool_type = v.get("type", "")
+    elif isinstance(v, ConversationTool):
+        tool_type = v.type
+    else:
+        tool_type = ""
+    return tool_type if tool_type in _TOOL_TYPE_MAP else "_fallback"
+
+
 AnyToolSettings = Annotated[
-    WebResearchTool
-    | NoxusQaTool
-    | KnowledgeBaseSelectorTool
-    | KnowledgeBaseQaTool
-    | WorkflowTool
-    | HumanInTheLoopTool
-    | AttachFileTool
-    | MemoryTool
-    | FileSystemTool
-    | CodeExecutionTool
-    | AgentTool
-    | ActionTool
-    | ChatflowTool
-    | FlowTransitionTool
-    | ChatflowExtractionTool
-    | ChatflowTransitionTool
-    | SandboxTool
-    | ScheduleTool
-    | TodosTool
-    | SubagentTool
-    | AgentMemoryTool,
-    Discriminator("type"),
+    Annotated[WebResearchTool, Tag("web_research")]
+    | Annotated[NoxusQaTool, Tag("noxus_qa")]
+    | Annotated[KnowledgeBaseSelectorTool, Tag("kb_selector")]
+    | Annotated[KnowledgeBaseQaTool, Tag("kb_qa")]
+    | Annotated[WorkflowTool, Tag("workflow")]
+    | Annotated[HumanInTheLoopTool, Tag("human_in_the_loop")]
+    | Annotated[AttachFileTool, Tag("attach_file")]
+    | Annotated[MemoryTool, Tag("memory")]
+    | Annotated[FileSystemTool, Tag("filesystem")]
+    | Annotated[CodeExecutionTool, Tag("code_execution")]
+    | Annotated[AgentTool, Tag("agent_tool")]
+    | Annotated[ActionTool, Tag("action")]
+    | Annotated[ChatflowTool, Tag("chatflow")]
+    | Annotated[FlowTransitionTool, Tag("flow_transition")]
+    | Annotated[ChatflowExtractionTool, Tag("chatflow_extraction")]
+    | Annotated[ChatflowTransitionTool, Tag("chatflow_transition")]
+    | Annotated[SandboxTool, Tag("sandbox")]
+    | Annotated[ScheduleTool, Tag("schedule_tool")]
+    | Annotated[TodosTool, Tag("todos")]
+    | Annotated[SubagentTool, Tag("subagent")]
+    | Annotated[AgentMemoryTool, Tag("agent_memory")]
+    | Annotated[ConversationTool, Tag("_fallback")],
+    Discriminator(_tool_discriminator),
 ]
 
 
@@ -209,20 +276,7 @@ class ConversationSettings(BaseModel):
     def validate_text_fields(cls, data: Any) -> Any:
         if isinstance(data, dict):
             for field in ["persona", "tone", "extra_instructions"]:
-                value = data.get(field)
-                if value is None:
-                    continue
-                if isinstance(value, dict):
-                    data[field] = value.get("text")
-                elif isinstance(value, list):
-                    data[field] = (
-                        "".join(
-                            part.get("text", "")
-                            for part in value
-                            if isinstance(part, dict)
-                        )
-                        or None
-                    )
+                data[field] = _tiptap_to_text(data.get(field))
         return data
 
 
@@ -238,7 +292,7 @@ class ConversationFile(BaseModel):
     @model_validator(mode="after")
     def validate_content_url(self):
         if self.b64_content is None and self.url is None:
-            raise ValidationError("Either base64 content or url must be provided")
+            raise ValueError("Either base64 content or url must be provided")
         return self
 
 

@@ -1,18 +1,17 @@
-from typing import TypeAlias
-from uuid import UUID
+from __future__ import annotations
+
 import enum
+from typing import TYPE_CHECKING, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from noxus_sdk.resources.base import BaseResource, BaseService
 from noxus_sdk.resources.conversations import (
     ConversationSettings,
-    KnowledgeBaseQaTool,
-    KnowledgeBaseSelectorTool,
-    NoxusQaTool,
-    WebResearchTool,
-    WorkflowTool,
 )
+
+if TYPE_CHECKING:
+    from uuid import UUID
 
 AgentSettings: TypeAlias = ConversationSettings
 
@@ -71,8 +70,12 @@ class Agent(BaseResource):
         return [AssistantTrigger(client=self.client, **result) for result in result]
 
     def update(
-        self, name: str, settings: AgentSettings, preview: bool = False
-    ) -> "Agent":
+        self,
+        name: str,
+        settings: AgentSettings,
+        *,
+        preview: bool = False,
+    ) -> Agent:
         result = self.client.patch(
             f"/v1/agents/{self.id}",
             {"name": name, "definition": settings.model_dump()},
@@ -98,13 +101,15 @@ class AgentService(BaseService[Agent]):
 
     def create(self, name: str, settings: AgentSettings) -> Agent:
         result = self.client.post(
-            "/v1/agents", {"name": name, "definition": settings.model_dump()}
+            "/v1/agents",
+            {"name": name, "definition": settings.model_dump()},
         )
         return Agent(client=self.client, **result)
 
     async def acreate(self, name: str, settings: AgentSettings) -> Agent:
         result = await self.client.apost(
-            "/v1/agents", {"name": name, "definition": settings.model_dump()}
+            "/v1/agents",
+            {"name": name, "definition": settings.model_dump()},
         )
         return Agent(client=self.client, **result)
 
@@ -121,6 +126,7 @@ class AgentService(BaseService[Agent]):
         agent_id: str,
         name: str | None = None,
         settings: AgentSettings | None = None,
+        *,
         preview: bool = False,
     ) -> Agent:
         result = self.client.patch(
@@ -135,6 +141,7 @@ class AgentService(BaseService[Agent]):
         agent_id: str,
         name: str | None = None,
         settings: AgentSettings | None = None,
+        *,
         preview: bool = False,
     ) -> Agent:
         result = await self.client.apatch(
